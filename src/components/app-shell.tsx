@@ -1,12 +1,13 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { Activity, BarChart3, LogOut, Sparkles, Upload } from "lucide-react";
+import { Activity, BarChart3, Eye, LogOut, Sparkles, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { clearLocalCache } from "@/lib/trade-store";
 
 const NAV = [
   { to: "/", label: "דשבורד", icon: BarChart3 },
   { to: "/trades", label: "עסקאות", icon: Activity },
+  { to: "/watchlist", label: "מעקב", icon: Eye },
   { to: "/import", label: "ייבוא", icon: Upload },
   { to: "/insights", label: "תובנות", icon: Sparkles },
 ] as const;
