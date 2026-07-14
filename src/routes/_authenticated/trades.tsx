@@ -352,16 +352,26 @@ function TradeDialog({
             <Input type="date" value={form.entryDate.slice(0, 10)} onChange={(e) => set("entryDate", e.target.value)} />
           </div>
           <div>
-            <Label>תאריך יציאה</Label>
-            <Input type="date" value={form.exitDate.slice(0, 10)} onChange={(e) => set("exitDate", e.target.value)} />
+            <Label>תאריך יציאה <span className="text-xs text-muted-foreground">(רשות — השאר ריק לפוזיציה פתוחה)</span></Label>
+            <Input
+              type="date"
+              value={form.exitDate ? form.exitDate.slice(0, 10) : ""}
+              onChange={(e) => set("exitDate", e.target.value || undefined)}
+            />
           </div>
           <div>
             <Label>מחיר כניסה</Label>
             <Input type="number" step="0.01" value={form.entryPrice} onChange={(e) => set("entryPrice", +e.target.value)} dir="ltr" />
           </div>
           <div>
-            <Label>מחיר יציאה</Label>
-            <Input type="number" step="0.01" value={form.exitPrice} onChange={(e) => set("exitPrice", +e.target.value)} dir="ltr" />
+            <Label>מחיר יציאה <span className="text-xs text-muted-foreground">(רשות)</span></Label>
+            <Input
+              type="number"
+              step="0.01"
+              value={form.exitPrice ?? ""}
+              onChange={(e) => set("exitPrice", e.target.value === "" ? undefined : +e.target.value)}
+              dir="ltr"
+            />
           </div>
           <div>
             <Label>כמות</Label>
