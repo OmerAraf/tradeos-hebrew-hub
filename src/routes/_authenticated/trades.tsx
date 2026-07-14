@@ -85,9 +85,9 @@ function TradesPage() {
       symbol: "",
       direction: "long",
       entryDate: new Date().toISOString().slice(0, 10),
-      exitDate: new Date().toISOString().slice(0, 10),
+      exitDate: undefined,
       entryPrice: 0,
-      exitPrice: 0,
+      exitPrice: undefined,
       quantity: 0,
       fees: 0,
       strategy: "swing",
@@ -96,7 +96,11 @@ function TradesPage() {
   }
 
   function openEdit(t: Trade) {
-    setEditing({ ...t, entryDate: t.entryDate.slice(0, 10), exitDate: t.exitDate.slice(0, 10) });
+    setEditing({
+      ...t,
+      entryDate: t.entryDate.slice(0, 10),
+      exitDate: t.exitDate ? t.exitDate.slice(0, 10) : undefined,
+    });
     setDialogOpen(true);
   }
 
