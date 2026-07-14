@@ -112,3 +112,28 @@ export function AdvancedChart({ symbol }: { symbol: string }) {
     </div>
   );
 }
+
+export function TimelineNews({ symbol }: { symbol: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useTvWidget(
+    ref,
+    "https://s3.tradingview.com/external-embedding/embed-widget-timeline.js",
+    {
+      feedMode: "symbol",
+      symbol,
+      isTransparent: true,
+      displayMode: "regular",
+      width: "100%",
+      height: "100%",
+      colorTheme: "dark",
+      locale: "en",
+    },
+    [symbol],
+  );
+  return (
+    <div dir="ltr" className="w-full" style={{ height: 420 }}>
+      <div ref={ref} className="tradingview-widget-container h-full w-full" />
+    </div>
+  );
+}
+
