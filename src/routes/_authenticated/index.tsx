@@ -15,6 +15,7 @@ import { useTrades } from "@/lib/use-trades";
 import { bySymbol, computeStats, equityCurve, monthlyPnl } from "@/lib/trade-stats";
 import { fmtMoney, fmtNum, fmtPct, pnl } from "@/lib/trade-types";
 import { GlassCard, KpiCard, PageHeader } from "@/components/ui-blocks";
+import { NewsPanel } from "@/components/news-panel";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
