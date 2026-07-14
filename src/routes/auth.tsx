@@ -5,7 +5,20 @@ import { GlassCard } from "@/components/ui-blocks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+
+const REMEMBER_KEY = "tradeos_remember_me";
+
+function installEphemeralSignOut() {
+  if (typeof window === "undefined") return;
+  const handler = () => {
+    try {
+      void supabase.auth.signOut();
+    } catch {}
+  };
+  window.addEventListener("pagehide", handler, { once: true });
+}
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
