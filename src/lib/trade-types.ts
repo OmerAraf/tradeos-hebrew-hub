@@ -6,9 +6,9 @@ export interface Trade {
   symbol: string;
   direction: Direction;
   entryDate: string; // ISO
-  exitDate: string; // ISO
+  exitDate?: string; // ISO, empty when position is still open
   entryPrice: number;
-  exitPrice: number;
+  exitPrice?: number; // undefined when position is still open
   quantity: number;
   fees: number;
   stopPrice?: number;
@@ -16,15 +16,22 @@ export interface Trade {
   notes?: string;
 }
 
+export function isOpen(t: Trade): boolean {
+  return !t.exitDate || t.exitPrice == null;
+}
+
 export function pnl(t: Trade): number {
+  if (isOpen(t)) return 0;
+  const exit = t.exitPrice as number;
   const gross =
     t.direction === "long"
-      ? (t.exitPrice - t.entryPrice) * t.quantity
-      : (t.entryPrice - t.exitPrice) * t.quantity;
+      ? (exit - t.entryPrice) * t.quantity
+      : (t.entryPrice - exit) * t.quantity;
   return gross - (t.fees || 0);
 }
 
 export function rMultiple(t: Trade): number | null {
+  if (isOpen(t)) return null;
   if (t.stopPrice == null) return null;
   const risk = Math.abs(t.entryPrice - t.stopPrice) * t.quantity;
   if (risk === 0) return null;
