@@ -12,9 +12,9 @@ interface Row {
   symbol: string;
   direction: Direction;
   entry_date: string;
-  exit_date: string;
+  exit_date: string | null;
   entry_price: number | string;
-  exit_price: number | string;
+  exit_price: number | string | null;
   quantity: number | string;
   fees: number | string;
   stop_price: number | string | null;
@@ -28,9 +28,9 @@ function rowToTrade(r: Row): Trade {
     symbol: r.symbol,
     direction: r.direction,
     entryDate: r.entry_date,
-    exitDate: r.exit_date,
+    exitDate: r.exit_date ?? undefined,
     entryPrice: Number(r.entry_price),
-    exitPrice: Number(r.exit_price),
+    exitPrice: r.exit_price == null ? undefined : Number(r.exit_price),
     quantity: Number(r.quantity),
     fees: Number(r.fees) || 0,
     stopPrice: r.stop_price == null ? undefined : Number(r.stop_price),
@@ -46,9 +46,9 @@ function tradeToRow(t: Trade, userId: string) {
     symbol: t.symbol,
     direction: t.direction,
     entry_date: t.entryDate,
-    exit_date: t.exitDate,
+    exit_date: t.exitDate ?? null,
     entry_price: t.entryPrice,
-    exit_price: t.exitPrice,
+    exit_price: t.exitPrice ?? null,
     quantity: t.quantity,
     fees: t.fees,
     stop_price: t.stopPrice ?? null,

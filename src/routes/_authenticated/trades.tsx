@@ -85,9 +85,9 @@ function TradesPage() {
       symbol: "",
       direction: "long",
       entryDate: new Date().toISOString().slice(0, 10),
-      exitDate: new Date().toISOString().slice(0, 10),
+      exitDate: undefined,
       entryPrice: 0,
-      exitPrice: 0,
+      exitPrice: undefined,
       quantity: 0,
       fees: 0,
       strategy: "swing",
@@ -96,7 +96,11 @@ function TradesPage() {
   }
 
   function openEdit(t: Trade) {
-    setEditing({ ...t, entryDate: t.entryDate.slice(0, 10), exitDate: t.exitDate.slice(0, 10) });
+    setEditing({
+      ...t,
+      entryDate: t.entryDate.slice(0, 10),
+      exitDate: t.exitDate ? t.exitDate.slice(0, 10) : undefined,
+    });
     setDialogOpen(true);
   }
 
@@ -194,12 +198,14 @@ function TradesPage() {
                       </td>
                       <td className="p-2 text-xs">{t.strategy === "swing" ? "סווינג" : "לונג טרם"}</td>
                       <td className="p-2" dir="ltr">{t.entryDate.slice(0, 10)}</td>
-                      <td className="p-2" dir="ltr">{t.exitDate.slice(0, 10)}</td>
+                      <td className="p-2" dir="ltr">
+                        {t.exitDate ? t.exitDate.slice(0, 10) : <span className="rounded bg-neon/20 px-1.5 py-0.5 text-xs text-neon">פתוחה</span>}
+                      </td>
                       <td className="p-2" dir="ltr">{t.quantity}</td>
                       <td className="p-2" dir="ltr">${t.entryPrice.toFixed(2)}</td>
-                      <td className="p-2" dir="ltr">${t.exitPrice.toFixed(2)}</td>
-                      <td className={`p-2 font-semibold ${p >= 0 ? "text-profit" : "text-loss"}`} dir="ltr">
-                        {fmtMoney(p)}
+                      <td className="p-2" dir="ltr">{t.exitPrice != null ? `$${t.exitPrice.toFixed(2)}` : "—"}</td>
+                      <td className={`p-2 font-semibold ${t.exitPrice == null ? "text-muted-foreground" : p >= 0 ? "text-profit" : "text-loss"}`} dir="ltr">
+                        {t.exitPrice == null ? "—" : fmtMoney(p)}
                       </td>
                       <td className="p-2" dir="ltr">{r == null ? "—" : r.toFixed(2)}</td>
                       <td className="p-2">
@@ -289,13 +295,23 @@ function TradeDialog({
     if (!form) return;
     if (!form.symbol.trim()) return toast.error("חסר סימבול");
     if (form.quantity <= 0) return toast.error("כמות חייבת להיות חיובית");
-    if (form.entryPrice <= 0 || form.exitPrice <= 0) return toast.error("מחירים חייבים להיות חיוביים");
-    if (form.entryDate > form.exitDate) return toast.error("תאריך יציאה לפני תאריך כניסה");
+    if (form.entryPrice <= 0) return toast.error("מחיר כניסה חייב להיות חיובי");
+    const hasExitDate = !!form.exitDate;
+    const hasExitPrice = form.exitPrice != null && !Number.isNaN(form.exitPrice) && form.exitPrice > 0;
+    if (hasExitDate !== hasExitPrice) {
+      return toast.error("להשלמת סגירה יש למלא גם תאריך יציאה וגם מחיר יציאה");
+    }
+    if (hasExitDate && form.exitDate && form.entryDate > form.exitDate) {
+      return toast.error("תאריך יציאה לפני תאריך כניסה");
+    }
     const normalized: Trade = {
       ...form,
       symbol: form.symbol.toUpperCase().trim(),
       entryDate: form.entryDate.length === 10 ? form.entryDate + "T14:30:00Z" : form.entryDate,
-      exitDate: form.exitDate.length === 10 ? form.exitDate + "T20:00:00Z" : form.exitDate,
+      exitDate: hasExitDate && form.exitDate
+        ? (form.exitDate.length === 10 ? form.exitDate + "T20:00:00Z" : form.exitDate)
+        : undefined,
+      exitPrice: hasExitPrice ? form.exitPrice : undefined,
     };
     onSave(normalized);
   }
@@ -336,16 +352,26 @@ function TradeDialog({
             <Input type="date" value={form.entryDate.slice(0, 10)} onChange={(e) => set("entryDate", e.target.value)} />
           </div>
           <div>
-            <Label>תאריך יציאה</Label>
-            <Input type="date" value={form.exitDate.slice(0, 10)} onChange={(e) => set("exitDate", e.target.value)} />
+            <Label>תאריך יציאה <span className="text-xs text-muted-foreground">(רשות — השאר ריק לפוזיציה פתוחה)</span></Label>
+            <Input
+              type="date"
+              value={form.exitDate ? form.exitDate.slice(0, 10) : ""}
+              onChange={(e) => set("exitDate", e.target.value || undefined)}
+            />
           </div>
           <div>
             <Label>מחיר כניסה</Label>
             <Input type="number" step="0.01" value={form.entryPrice} onChange={(e) => set("entryPrice", +e.target.value)} dir="ltr" />
           </div>
           <div>
-            <Label>מחיר יציאה</Label>
-            <Input type="number" step="0.01" value={form.exitPrice} onChange={(e) => set("exitPrice", +e.target.value)} dir="ltr" />
+            <Label>מחיר יציאה <span className="text-xs text-muted-foreground">(רשות)</span></Label>
+            <Input
+              type="number"
+              step="0.01"
+              value={form.exitPrice ?? ""}
+              onChange={(e) => set("exitPrice", e.target.value === "" ? undefined : +e.target.value)}
+              dir="ltr"
+            />
           </div>
           <div>
             <Label>כמות</Label>
