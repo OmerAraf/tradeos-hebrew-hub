@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useTrades } from "@/lib/use-trades";
 import { deleteTrade, newId, upsertTrade } from "@/lib/trade-store";
@@ -270,7 +270,7 @@ function TradeDialog({
   onSave: (t: Trade) => void;
 }) {
   const [form, setForm] = useState<Trade | null>(trade);
-  useMemo(() => setForm(trade), [trade]);
+  useEffect(() => setForm(trade), [trade]);
 
   if (!form) return null;
 
