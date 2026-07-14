@@ -111,29 +111,46 @@ function AuthPage() {
             </button>
           </div>
 
-          <form onSubmit={submit} className="space-y-3">
+          <form onSubmit={submit} className="space-y-3" method="post" action="#">
             <div>
-              <Label className="text-xs">אימייל</Label>
+              <Label htmlFor="auth-email" className="text-xs">אימייל</Label>
               <Input
+                id="auth-email"
+                name="email"
                 type="email"
                 required
                 dir="ltr"
+                autoComplete="email"
+                inputMode="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
               />
             </div>
             <div>
-              <Label className="text-xs">סיסמה</Label>
+              <Label htmlFor="auth-password" className="text-xs">סיסמה</Label>
               <Input
+                id="auth-password"
+                name="password"
                 type="password"
                 required
                 minLength={6}
                 dir="ltr"
+                autoComplete={mode === "signup" ? "new-password" : "current-password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
+            <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+              <Checkbox
+                checked={remember}
+                onCheckedChange={(v) => setRemember(v === true)}
+              />
+              <span>זכור אותי במכשיר הזה</span>
+            </label>
             <Button type="submit" disabled={busy} className="w-full">
               {busy ? "רגע…" : mode === "signin" ? "התחבר" : "צור חשבון"}
             </Button>
