@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedWatchlistRouteImport } from './routes/_authenticated/watchlist'
 import { Route as AuthenticatedTradesRouteImport } from './routes/_authenticated/trades'
 import { Route as AuthenticatedInsightsRouteImport } from './routes/_authenticated/insights'
 import { Route as AuthenticatedImportRouteImport } from './routes/_authenticated/import'
@@ -28,6 +29,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedWatchlistRoute = AuthenticatedWatchlistRouteImport.update({
+  id: '/watchlist',
+  path: '/watchlist',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedTradesRoute = AuthenticatedTradesRouteImport.update({
@@ -52,12 +58,14 @@ export interface FileRoutesByFullPath {
   '/import': typeof AuthenticatedImportRoute
   '/insights': typeof AuthenticatedInsightsRoute
   '/trades': typeof AuthenticatedTradesRoute
+  '/watchlist': typeof AuthenticatedWatchlistRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/import': typeof AuthenticatedImportRoute
   '/insights': typeof AuthenticatedInsightsRoute
   '/trades': typeof AuthenticatedTradesRoute
+  '/watchlist': typeof AuthenticatedWatchlistRoute
   '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesById {
@@ -67,13 +75,14 @@ export interface FileRoutesById {
   '/_authenticated/import': typeof AuthenticatedImportRoute
   '/_authenticated/insights': typeof AuthenticatedInsightsRoute
   '/_authenticated/trades': typeof AuthenticatedTradesRoute
+  '/_authenticated/watchlist': typeof AuthenticatedWatchlistRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/import' | '/insights' | '/trades'
+  fullPaths: '/' | '/auth' | '/import' | '/insights' | '/trades' | '/watchlist'
   fileRoutesByTo: FileRoutesByTo
-  to: '/auth' | '/import' | '/insights' | '/trades' | '/'
+  to: '/auth' | '/import' | '/insights' | '/trades' | '/watchlist' | '/'
   id:
     | '__root__'
     | '/_authenticated'
@@ -81,6 +90,7 @@ export interface FileRouteTypes {
     | '/_authenticated/import'
     | '/_authenticated/insights'
     | '/_authenticated/trades'
+    | '/_authenticated/watchlist'
     | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
@@ -112,6 +122,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/watchlist': {
+      id: '/_authenticated/watchlist'
+      path: '/watchlist'
+      fullPath: '/watchlist'
+      preLoaderRoute: typeof AuthenticatedWatchlistRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/trades': {
       id: '/_authenticated/trades'
       path: '/trades'
@@ -140,6 +157,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedImportRoute: typeof AuthenticatedImportRoute
   AuthenticatedInsightsRoute: typeof AuthenticatedInsightsRoute
   AuthenticatedTradesRoute: typeof AuthenticatedTradesRoute
+  AuthenticatedWatchlistRoute: typeof AuthenticatedWatchlistRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
@@ -147,6 +165,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedImportRoute: AuthenticatedImportRoute,
   AuthenticatedInsightsRoute: AuthenticatedInsightsRoute,
   AuthenticatedTradesRoute: AuthenticatedTradesRoute,
+  AuthenticatedWatchlistRoute: AuthenticatedWatchlistRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 
