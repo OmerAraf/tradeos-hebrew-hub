@@ -51,7 +51,12 @@ function WatchlistPage() {
       setInput("");
       await reload();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "שגיאה בהוספה");
+      if (e instanceof DuplicateSymbolError) {
+        toast("הסימבול כבר במעקב");
+        setInput("");
+      } else {
+        setErr(e instanceof Error ? e.message : "שגיאה בהוספה");
+      }
     } finally {
       setBusy(false);
     }
@@ -63,7 +68,18 @@ function WatchlistPage() {
     await reload();
   }
 
-  const symbols = useMemo(() => items?.map((i) => i.symbol) ?? [], [items]);
+  const symbols = useMemo(() => {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const i of items ?? []) {
+      const s = i.symbol.toUpperCase();
+      if (seen.has(s)) continue;
+      seen.add(s);
+      out.push(s);
+    }
+    return out;
+  }, [items]);
+
 
   return (
     <div>
