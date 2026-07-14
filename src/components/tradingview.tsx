@@ -6,7 +6,7 @@ import { useEffect, useRef } from "react";
  */
 
 function useTvWidget(
-  containerRef: React.RefObject<HTMLDivElement>,
+  containerRef: React.RefObject<HTMLDivElement | null>,
   scriptSrc: string,
   config: Record<string, unknown>,
   deps: unknown[],
