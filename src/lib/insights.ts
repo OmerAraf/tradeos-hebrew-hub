@@ -53,8 +53,8 @@ export function computeInsights(trades: Trade[]): Insight[] {
       for (let j = i + 1; j < arr.length; j++) {
         const a = arr[i], b = arr[j];
         if (a.direction === b.direction) continue;
-        const aStart = a.entryDate, aEnd = a.exitDate;
-        const bStart = b.entryDate, bEnd = b.exitDate;
+        const aStart = a.entryDate, aEnd = a.exitDate ?? a.entryDate;
+        const bStart = b.entryDate, bEnd = b.exitDate ?? b.entryDate;
         if (aStart <= bEnd && bStart <= aEnd) {
           out.push({
             level: "warn",
