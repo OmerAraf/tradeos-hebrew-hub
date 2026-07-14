@@ -4,7 +4,7 @@ import { GlassCard, PageHeader } from "@/components/ui-blocks";
 import { useTrades } from "@/lib/use-trades";
 import { computeInsights } from "@/lib/insights";
 
-export const Route = createFileRoute("/insights")({
+export const Route = createFileRoute("/_authenticated/insights")({
   head: () => ({
     meta: [
       { title: "תובנות — TRADE·OS 2050" },

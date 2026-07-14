@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/trades")({
+export const Route = createFileRoute("/_authenticated/trades")({
   head: () => ({
     meta: [
       { title: "יומן עסקאות — TRADE·OS 2050" },

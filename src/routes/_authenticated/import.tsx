@@ -25,7 +25,7 @@ import {
 import { fmtMoney, pnl, type Trade } from "@/lib/trade-types";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/import")({
+export const Route = createFileRoute("/_authenticated/import")({
   head: () => ({
     meta: [
       { title: "ייבוא וגיבוי — TRADE·OS 2050" },
