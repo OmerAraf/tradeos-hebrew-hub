@@ -245,10 +245,10 @@ function ImportPage() {
                       <td className="p-2 font-semibold" dir="ltr">{t.symbol}</td>
                       <td className="p-2">{t.direction === "long" ? "לונג" : "שורט"}</td>
                       <td className="p-2" dir="ltr">{t.entryDate.slice(0, 10)}</td>
-                      <td className="p-2" dir="ltr">{t.exitDate.slice(0, 10)}</td>
+                      <td className="p-2" dir="ltr">{t.exitDate ? t.exitDate.slice(0, 10) : "—"}</td>
                       <td className="p-2" dir="ltr">{t.quantity}</td>
                       <td className="p-2" dir="ltr">${t.entryPrice.toFixed(2)}</td>
-                      <td className="p-2" dir="ltr">${t.exitPrice.toFixed(2)}</td>
+                      <td className="p-2" dir="ltr">{t.exitPrice != null ? `$${t.exitPrice.toFixed(2)}` : "—"}</td>
                       <td className={`p-2 font-semibold ${p >= 0 ? "text-profit" : "text-loss"}`} dir="ltr">
                         {fmtMoney(p)}
                       </td>
