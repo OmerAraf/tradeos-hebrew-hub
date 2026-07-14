@@ -173,7 +173,7 @@ function ImportPage() {
                       {f.label} {f.required && <span className="text-loss">*</span>}
                     </Label>
                     <Select
-                      value={map[f.key] ?? ""}
+                      value={map[f.key] || "__none"}
                       onValueChange={(v) => updateMap(f.key, v === "__none" ? "" : v)}
                     >
                       <SelectTrigger><SelectValue placeholder="בחר עמודה" /></SelectTrigger>
