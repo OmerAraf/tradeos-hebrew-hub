@@ -1,12 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
-import { ChevronDown, ChevronUp, Plus, RefreshCw, Trash2, X } from "lucide-react";
+import { toast } from "sonner";
+import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 import { GlassCard, PageHeader } from "@/components/ui-blocks";
-import { AdvancedChart, MiniSymbolOverview, TickerTape } from "@/components/tradingview";
-import { addSymbol, fetchWatchlist, removeSymbol, type WatchlistItem } from "@/lib/watchlist-store";
-import { fetchNewsForSymbol, type NewsItem } from "@/lib/news.functions";
-import { relativeTimeHe } from "@/lib/relative-time-he";
+import { AdvancedChart, MiniSymbolOverview, TickerTape, TimelineNews } from "@/components/tradingview";
+import {
+  addSymbol,
+  DuplicateSymbolError,
+  fetchWatchlist,
+  removeSymbol,
+  type WatchlistItem,
+} from "@/lib/watchlist-store";
+
 
 export const Route = createFileRoute("/_authenticated/watchlist")({
   head: () => ({
