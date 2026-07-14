@@ -165,90 +165,13 @@ function WatchlistCard({
       {expanded && (
         <div className="mt-3 space-y-3">
           <AdvancedChart symbol={item.symbol} />
-          <NewsPanel symbol={item.symbol} />
+          <div className="glass rounded-xl border border-white/5 p-3">
+            <div className="mb-2 text-sm font-semibold text-foreground">חדשות</div>
+            <TimelineNews symbol={item.symbol} />
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-function NewsPanel({ symbol }: { symbol: string }) {
-  const call = useServerFn(fetchNewsForSymbol);
-  const [items, setItems] = useState<NewsItem[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const [tick, setTick] = useState(0);
-
-  async function load() {
-    setLoading(true);
-    setErr(null);
-    try {
-      const res = await call({ data: { symbol } });
-      setItems(res.items);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "שגיאה בטעינת חדשות");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    load();
-    const id = window.setInterval(load, 5 * 60 * 1000);
-    return () => window.clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [symbol]);
-
-  // Re-render for relative time
-  useEffect(() => {
-    const id = window.setInterval(() => setTick((t) => t + 1), 60 * 1000);
-    return () => window.clearInterval(id);
-  }, []);
-
-  return (
-    <div className="glass rounded-xl border border-white/5 p-3">
-      <div className="mb-2 flex items-center justify-between">
-        <div className="text-sm font-semibold text-foreground">חדשות</div>
-        <button
-          onClick={load}
-          disabled={loading}
-          title="רענן"
-          className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-white/5 hover:text-neon disabled:opacity-50"
-        >
-          <RefreshCw className={"h-3.5 w-3.5 " + (loading ? "animate-spin" : "")} />
-          רענן
-        </button>
-      </div>
-      {err ? (
-        <div className="flex items-center gap-2 text-xs text-loss">
-          <X className="h-4 w-4" />
-          {err}
-        </div>
-      ) : items === null ? (
-        <div className="text-xs text-muted-foreground">טוען…</div>
-      ) : items.length === 0 ? (
-        <div className="text-xs text-muted-foreground">לא נמצאו חדשות עדכניות.</div>
-      ) : (
-        <ul className="space-y-2" data-tick={tick}>
-          {items.map((n, i) => (
-            <li key={i} className="border-b border-white/5 pb-2 last:border-0 last:pb-0">
-              <a
-                href={n.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block text-sm font-medium text-foreground hover:text-neon"
-              >
-                {n.title}
-              </a>
-              <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
-                <span>{n.source}</span>
-                <span>·</span>
-                <span>{relativeTimeHe(n.publishedAt)}</span>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
