@@ -5,7 +5,20 @@ import { GlassCard } from "@/components/ui-blocks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+
+const REMEMBER_KEY = "tradeos_remember_me";
+
+function installEphemeralSignOut() {
+  if (typeof window === "undefined") return;
+  const handler = () => {
+    try {
+      void supabase.auth.signOut();
+    } catch {}
+  };
+  window.addEventListener("pagehide", handler, { once: true });
+}
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -23,12 +36,20 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [remember, setRemember] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const v = localStorage.getItem(REMEMBER_KEY);
+    return v === null ? true : v === "1";
+  });
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
     setBusy(true);
     try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem(REMEMBER_KEY, remember ? "1" : "0");
+      }
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email,
@@ -37,12 +58,15 @@ function AuthPage() {
         });
         if (error) throw error;
         toast.success("החשבון נוצר. בדוק את המייל לאישור אם נדרש.");
-        // Try immediate sign-in (works when email confirmation is off)
         const { error: sErr } = await supabase.auth.signInWithPassword({ email, password });
-        if (!sErr) nav({ to: "/" });
+        if (!sErr) {
+          if (!remember) installEphemeralSignOut();
+          nav({ to: "/" });
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        if (!remember) installEphemeralSignOut();
         nav({ to: "/" });
       }
     } catch (err) {
@@ -87,29 +111,46 @@ function AuthPage() {
             </button>
           </div>
 
-          <form onSubmit={submit} className="space-y-3">
+          <form onSubmit={submit} className="space-y-3" method="post" action="#">
             <div>
-              <Label className="text-xs">אימייל</Label>
+              <Label htmlFor="auth-email" className="text-xs">אימייל</Label>
               <Input
+                id="auth-email"
+                name="email"
                 type="email"
                 required
                 dir="ltr"
+                autoComplete="email"
+                inputMode="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
               />
             </div>
             <div>
-              <Label className="text-xs">סיסמה</Label>
+              <Label htmlFor="auth-password" className="text-xs">סיסמה</Label>
               <Input
+                id="auth-password"
+                name="password"
                 type="password"
                 required
                 minLength={6}
                 dir="ltr"
+                autoComplete={mode === "signup" ? "new-password" : "current-password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
+            <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+              <Checkbox
+                checked={remember}
+                onCheckedChange={(v) => setRemember(v === true)}
+              />
+              <span>זכור אותי במכשיר הזה</span>
+            </label>
             <Button type="submit" disabled={busy} className="w-full">
               {busy ? "רגע…" : mode === "signin" ? "התחבר" : "צור חשבון"}
             </Button>
