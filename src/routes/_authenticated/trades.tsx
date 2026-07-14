@@ -295,13 +295,23 @@ function TradeDialog({
     if (!form) return;
     if (!form.symbol.trim()) return toast.error("חסר סימבול");
     if (form.quantity <= 0) return toast.error("כמות חייבת להיות חיובית");
-    if (form.entryPrice <= 0 || form.exitPrice <= 0) return toast.error("מחירים חייבים להיות חיוביים");
-    if (form.entryDate > form.exitDate) return toast.error("תאריך יציאה לפני תאריך כניסה");
+    if (form.entryPrice <= 0) return toast.error("מחיר כניסה חייב להיות חיובי");
+    const hasExitDate = !!form.exitDate;
+    const hasExitPrice = form.exitPrice != null && !Number.isNaN(form.exitPrice) && form.exitPrice > 0;
+    if (hasExitDate !== hasExitPrice) {
+      return toast.error("להשלמת סגירה יש למלא גם תאריך יציאה וגם מחיר יציאה");
+    }
+    if (hasExitDate && form.exitDate && form.entryDate > form.exitDate) {
+      return toast.error("תאריך יציאה לפני תאריך כניסה");
+    }
     const normalized: Trade = {
       ...form,
       symbol: form.symbol.toUpperCase().trim(),
       entryDate: form.entryDate.length === 10 ? form.entryDate + "T14:30:00Z" : form.entryDate,
-      exitDate: form.exitDate.length === 10 ? form.exitDate + "T20:00:00Z" : form.exitDate,
+      exitDate: hasExitDate && form.exitDate
+        ? (form.exitDate.length === 10 ? form.exitDate + "T20:00:00Z" : form.exitDate)
+        : undefined,
+      exitPrice: hasExitPrice ? form.exitPrice : undefined,
     };
     onSave(normalized);
   }
