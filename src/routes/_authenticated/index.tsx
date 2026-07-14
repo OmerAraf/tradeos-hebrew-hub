@@ -158,6 +158,10 @@ function Dashboard() {
           </div>
         </>
       )}
+
+      <div className="mt-4">
+        <NewsPanel />
+      </div>
     </div>
   );
 }
