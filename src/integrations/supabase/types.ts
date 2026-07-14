@@ -20,8 +20,8 @@ export type Database = {
           direction: string
           entry_date: string
           entry_price: number
-          exit_date: string
-          exit_price: number
+          exit_date: string | null
+          exit_price: number | null
           fees: number
           id: string
           notes: string | null
@@ -37,8 +37,8 @@ export type Database = {
           direction: string
           entry_date: string
           entry_price: number
-          exit_date: string
-          exit_price: number
+          exit_date?: string | null
+          exit_price?: number | null
           fees?: number
           id?: string
           notes?: string | null
@@ -54,8 +54,8 @@ export type Database = {
           direction?: string
           entry_date?: string
           entry_price?: number
-          exit_date?: string
-          exit_price?: number
+          exit_date?: string | null
+          exit_price?: number | null
           fees?: number
           id?: string
           notes?: string | null
