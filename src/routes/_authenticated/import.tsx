@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { exportJson, getTrades, importJson, saveTrades } from "@/lib/trade-store";
+import { addTrades, exportJson, getTrades, importJson } from "@/lib/trade-store";
 import {
   autoMap,
   dedupeAgainst,
@@ -25,7 +25,7 @@ import {
 import { fmtMoney, pnl, type Trade } from "@/lib/trade-types";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/import")({
+export const Route = createFileRoute("/_authenticated/import")({
   head: () => ({
     meta: [
       { title: "ייבוא וגיבוי — TRADE·OS 2050" },
@@ -92,15 +92,19 @@ function ImportPage() {
     reader.readAsText(f);
   }
 
-  function confirmImport() {
+  async function confirmImport() {
     if (!preview.length) return toast.error("אין עסקאות חדשות לייבוא");
-    saveTrades([...getTrades(), ...preview]);
-    toast.success(`יובאו ${preview.length} עסקאות`);
-    setPreview([]);
-    setText("");
-    setRows([]);
-    setHeaders([]);
-    setMap({});
+    try {
+      await addTrades(preview);
+      toast.success(`יובאו ${preview.length} עסקאות`);
+      setPreview([]);
+      setText("");
+      setRows([]);
+      setHeaders([]);
+      setMap({});
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "ייבוא נכשל");
+    }
   }
 
   function doExport() {
@@ -119,9 +123,9 @@ function ImportPage() {
     const f = e.target.files?.[0];
     if (!f) return;
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       try {
-        const n = importJson(String(reader.result || ""));
+        const n = await importJson(String(reader.result || ""));
         toast.success(`שוחזרו ${n} עסקאות`);
       } catch {
         toast.error("קובץ לא תקין");

@@ -1,175 +1,195 @@
-import type { Trade } from "./trade-types";
+import { supabase } from "@/integrations/supabase/client";
+import type { Direction, Strategy, Trade } from "./trade-types";
 
-const KEY = "tradeos_v1";
+const CACHE_KEY = "tradeos_cache_v2";
+const LEGACY_KEY = "tradeos_v1";
+const MIGRATED_FLAG = "tradeos_migrated_v1";
+const EVENT = "tradeos:change";
 
-interface Store {
-  trades: Trade[];
+interface Row {
+  id: string;
+  user_id: string;
+  symbol: string;
+  direction: Direction;
+  entry_date: string;
+  exit_date: string;
+  entry_price: number | string;
+  exit_price: number | string;
+  quantity: number | string;
+  fees: number | string;
+  stop_price: number | string | null;
+  strategy: Strategy;
+  notes: string | null;
 }
 
-const SEED: Trade[] = [
-  {
-    id: "s1",
-    symbol: "AAPL",
-    direction: "long",
-    entryDate: "2025-01-08T14:30:00Z",
-    exitDate: "2025-01-22T20:00:00Z",
-    entryPrice: 224.5,
-    exitPrice: 238.1,
-    quantity: 50,
-    fees: 2,
-    stopPrice: 218,
-    strategy: "swing",
-    notes: "פריצה מעל התנגדות",
-  },
-  {
-    id: "s2",
-    symbol: "TSLA",
-    direction: "short",
-    entryDate: "2025-02-03T15:00:00Z",
-    exitDate: "2025-02-11T19:00:00Z",
-    entryPrice: 402.0,
-    exitPrice: 378.5,
-    quantity: 20,
-    fees: 3,
-    stopPrice: 415,
-    strategy: "swing",
-    notes: "דיברגנס שלילי",
-  },
-  {
-    id: "s3",
-    symbol: "NVDA",
-    direction: "long",
-    entryDate: "2025-02-18T14:35:00Z",
-    exitDate: "2025-03-02T20:00:00Z",
-    entryPrice: 132.0,
-    exitPrice: 125.4,
-    quantity: 40,
-    fees: 2,
-    stopPrice: 128,
-    strategy: "swing",
-    notes: "סטופ נשבר",
-  },
-  {
-    id: "s4",
-    symbol: "MSFT",
-    direction: "long",
-    entryDate: "2025-03-10T14:40:00Z",
-    exitDate: "2025-06-15T20:00:00Z",
-    entryPrice: 388.0,
-    exitPrice: 442.3,
-    quantity: 15,
-    fees: 2,
-    strategy: "long-term",
-    notes: "החזקה ארוכה",
-  },
-  {
-    id: "s5",
-    symbol: "AMD",
-    direction: "long",
-    entryDate: "2025-04-02T15:00:00Z",
-    exitDate: "2025-04-09T20:00:00Z",
-    entryPrice: 148.0,
-    exitPrice: 141.2,
-    quantity: 30,
-    fees: 2,
-    stopPrice: 145,
-    strategy: "swing",
-    notes: "סטופ הודק מוקדם",
-  },
-  {
-    id: "s6",
-    symbol: "META",
-    direction: "long",
-    entryDate: "2025-05-06T14:45:00Z",
-    exitDate: "2025-05-20T20:00:00Z",
-    entryPrice: 512.0,
-    exitPrice: 548.9,
-    quantity: 10,
-    fees: 2,
-    stopPrice: 495,
-    strategy: "swing",
-  },
-  {
-    id: "s7",
-    symbol: "AMD",
-    direction: "short",
-    entryDate: "2025-06-11T15:10:00Z",
-    exitDate: "2025-06-18T19:30:00Z",
-    entryPrice: 168.0,
-    exitPrice: 172.5,
-    quantity: 25,
-    fees: 2,
-    stopPrice: 172,
-    strategy: "swing",
-    notes: "לא כובד הסטופ",
-  },
-  {
-    id: "s8",
-    symbol: "GOOGL",
-    direction: "long",
-    entryDate: "2025-07-01T14:35:00Z",
-    exitDate: "2026-01-10T20:00:00Z",
-    entryPrice: 176.5,
-    exitPrice: 208.4,
-    quantity: 25,
-    fees: 3,
-    strategy: "long-term",
-  },
-];
+function rowToTrade(r: Row): Trade {
+  return {
+    id: r.id,
+    symbol: r.symbol,
+    direction: r.direction,
+    entryDate: r.entry_date,
+    exitDate: r.exit_date,
+    entryPrice: Number(r.entry_price),
+    exitPrice: Number(r.exit_price),
+    quantity: Number(r.quantity),
+    fees: Number(r.fees) || 0,
+    stopPrice: r.stop_price == null ? undefined : Number(r.stop_price),
+    strategy: r.strategy,
+    notes: r.notes ?? undefined,
+  };
+}
 
-function read(): Store {
-  if (typeof window === "undefined") return { trades: [] };
+function tradeToRow(t: Trade, userId: string) {
+  return {
+    id: t.id,
+    user_id: userId,
+    symbol: t.symbol,
+    direction: t.direction,
+    entry_date: t.entryDate,
+    exit_date: t.exitDate,
+    entry_price: t.entryPrice,
+    exit_price: t.exitPrice,
+    quantity: t.quantity,
+    fees: t.fees,
+    stop_price: t.stopPrice ?? null,
+    strategy: t.strategy,
+    notes: t.notes ?? null,
+  };
+}
+
+function readCache(): Trade[] {
+  if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) {
-      const seed = { trades: SEED };
-      localStorage.setItem(KEY, JSON.stringify(seed));
-      return seed;
-    }
-    return JSON.parse(raw) as Store;
+    const raw = localStorage.getItem(CACHE_KEY);
+    return raw ? (JSON.parse(raw) as Trade[]) : [];
   } catch {
-    return { trades: [] };
+    return [];
   }
 }
 
-function write(s: Store) {
-  localStorage.setItem(KEY, JSON.stringify(s));
-  window.dispatchEvent(new Event("tradeos:change"));
+function writeCache(trades: Trade[]) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(CACHE_KEY, JSON.stringify(trades));
+  window.dispatchEvent(new Event(EVENT));
+}
+
+async function currentUserId(): Promise<string | null> {
+  const { data } = await supabase.auth.getUser();
+  return data.user?.id ?? null;
 }
 
 export function getTrades(): Trade[] {
-  return read().trades;
+  return readCache();
 }
 
-export function saveTrades(trades: Trade[]) {
-  write({ trades });
+export async function refreshFromCloud(): Promise<Trade[]> {
+  const uid = await currentUserId();
+  if (!uid) return [];
+  const { data, error } = await supabase
+    .from("trades")
+    .select("*")
+    .order("entry_date", { ascending: false });
+  if (error) throw error;
+  const trades = (data as unknown as Row[]).map(rowToTrade);
+  writeCache(trades);
+  return trades;
 }
 
-export function upsertTrade(t: Trade) {
-  const s = read();
-  const idx = s.trades.findIndex((x) => x.id === t.id);
-  if (idx >= 0) s.trades[idx] = t;
-  else s.trades.push(t);
-  write(s);
+export async function initSync(): Promise<void> {
+  const uid = await currentUserId();
+  if (!uid) return;
+
+  // One-time migration of legacy localStorage trades
+  if (typeof window !== "undefined" && !localStorage.getItem(MIGRATED_FLAG)) {
+    try {
+      const legacy = localStorage.getItem(LEGACY_KEY);
+      if (legacy) {
+        const parsed = JSON.parse(legacy) as { trades?: Trade[] };
+        const list = parsed?.trades ?? [];
+        if (list.length > 0) {
+          // Skip seed-only migration: seed IDs start with "s"
+          const real = list.filter((t) => !/^s\d+$/.test(t.id));
+          if (real.length > 0) {
+            const rows = real.map((t) => tradeToRow(t, uid));
+            await supabase.from("trades").upsert(rows, { onConflict: "id" });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("legacy migration failed", e);
+    }
+    localStorage.setItem(MIGRATED_FLAG, "1");
+  }
+
+  await refreshFromCloud();
 }
 
-export function deleteTrade(id: string) {
-  const s = read();
-  s.trades = s.trades.filter((t) => t.id !== id);
-  write(s);
+export async function upsertTrade(t: Trade): Promise<void> {
+  const uid = await currentUserId();
+  if (!uid) throw new Error("לא מחובר");
+  const { error } = await supabase.from("trades").upsert(tradeToRow(t, uid), { onConflict: "id" });
+  if (error) throw error;
+  // Optimistic cache update
+  const cur = readCache();
+  const idx = cur.findIndex((x) => x.id === t.id);
+  if (idx >= 0) cur[idx] = t;
+  else cur.unshift(t);
+  writeCache(cur);
+}
+
+export async function deleteTrade(id: string): Promise<void> {
+  const { error } = await supabase.from("trades").delete().eq("id", id);
+  if (error) throw error;
+  writeCache(readCache().filter((t) => t.id !== id));
+}
+
+export async function addTrades(list: Trade[]): Promise<void> {
+  if (!list.length) return;
+  const uid = await currentUserId();
+  if (!uid) throw new Error("לא מחובר");
+  const rows = list.map((t) => tradeToRow(t, uid));
+  const { error } = await supabase.from("trades").upsert(rows, { onConflict: "id" });
+  if (error) throw error;
+  await refreshFromCloud();
+}
+
+export async function replaceAllTrades(list: Trade[]): Promise<void> {
+  const uid = await currentUserId();
+  if (!uid) throw new Error("לא מחובר");
+  const { error: delErr } = await supabase.from("trades").delete().eq("user_id", uid);
+  if (delErr) throw delErr;
+  if (list.length) {
+    const rows = list.map((t) => tradeToRow(t, uid));
+    const { error } = await supabase.from("trades").insert(rows);
+    if (error) throw error;
+  }
+  await refreshFromCloud();
+}
+
+// Legacy alias kept for backwards compat if anything imports it.
+export async function saveTrades(list: Trade[]): Promise<void> {
+  await replaceAllTrades(list);
 }
 
 export function exportJson(): string {
-  return JSON.stringify(read(), null, 2);
+  return JSON.stringify({ trades: readCache() }, null, 2);
 }
 
-export function importJson(text: string): number {
-  const parsed = JSON.parse(text) as Store;
+export async function importJson(text: string): Promise<number> {
+  const parsed = JSON.parse(text) as { trades?: Trade[] };
   if (!parsed || !Array.isArray(parsed.trades)) throw new Error("קובץ לא תקין");
-  write({ trades: parsed.trades });
+  await replaceAllTrades(parsed.trades);
   return parsed.trades.length;
 }
 
 export function newId(): string {
-  return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  // fallback
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+export function clearLocalCache() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(CACHE_KEY);
+  window.dispatchEvent(new Event(EVENT));
 }

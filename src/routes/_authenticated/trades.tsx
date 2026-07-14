@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/trades")({
+export const Route = createFileRoute("/_authenticated/trades")({
   head: () => ({
     meta: [
       { title: "יומן עסקאות — TRADE·OS 2050" },
@@ -225,10 +225,14 @@ function TradesPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         trade={editing}
-        onSave={(t) => {
-          upsertTrade(t);
-          toast.success("העסקה נשמרה");
-          setDialogOpen(false);
+        onSave={async (t) => {
+          try {
+            await upsertTrade(t);
+            toast.success("העסקה נשמרה");
+            setDialogOpen(false);
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : "שמירה נכשלה");
+          }
         }}
       />
 
@@ -241,12 +245,17 @@ function TradesPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>ביטול</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                if (deleteId) {
-                  deleteTrade(deleteId);
-                  toast.success("העסקה נמחקה");
-                }
+              onClick={async () => {
+                const id = deleteId;
                 setDeleteId(null);
+                if (id) {
+                  try {
+                    await deleteTrade(id);
+                    toast.success("העסקה נמחקה");
+                  } catch (e) {
+                    toast.error(e instanceof Error ? e.message : "מחיקה נכשלה");
+                  }
+                }
               }}
             >
               מחק

@@ -16,7 +16,7 @@ import { bySymbol, computeStats, equityCurve, monthlyPnl } from "@/lib/trade-sta
 import { fmtMoney, fmtNum, fmtPct } from "@/lib/trade-types";
 import { GlassCard, KpiCard, PageHeader } from "@/components/ui-blocks";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
       { title: "דשבורד — TRADE·OS 2050" },
