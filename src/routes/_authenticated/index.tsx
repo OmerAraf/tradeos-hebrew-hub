@@ -55,17 +55,13 @@ function Dashboard() {
             <KpiCard
               label="עסקה טובה"
               value={stats.bestTrade ? stats.bestTrade.symbol : "—"}
-              sub={stats.bestTrade ? fmtMoney((stats.bestTrade.direction === "long"
-                ? (stats.bestTrade.exitPrice - stats.bestTrade.entryPrice)
-                : (stats.bestTrade.entryPrice - stats.bestTrade.exitPrice)) * stats.bestTrade.quantity - stats.bestTrade.fees) : ""}
+              sub={stats.bestTrade ? fmtMoney(pnl(stats.bestTrade)) : ""}
               tone="profit"
             />
             <KpiCard
               label="עסקה גרועה"
               value={stats.worstTrade ? stats.worstTrade.symbol : "—"}
-              sub={stats.worstTrade ? fmtMoney((stats.worstTrade.direction === "long"
-                ? (stats.worstTrade.exitPrice - stats.worstTrade.entryPrice)
-                : (stats.worstTrade.entryPrice - stats.worstTrade.exitPrice)) * stats.worstTrade.quantity - stats.worstTrade.fees) : ""}
+              sub={stats.worstTrade ? fmtMoney(pnl(stats.worstTrade)) : ""}
               tone="loss"
             />
           </div>
