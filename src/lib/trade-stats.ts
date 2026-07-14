@@ -73,3 +73,24 @@ export function monthlyPnl(trades: Trade[]) {
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([month, value]) => ({ month, value: Number(value.toFixed(2)) }));
 }
+
+export function bySymbol(trades: Trade[]) {
+  const map = new Map<string, { pnl: number; wins: number; count: number }>();
+  for (const t of trades) {
+    if (!t.exitDate || t.exitPrice == null) continue;
+    const p = pnl(t);
+    const cur = map.get(t.symbol) || { pnl: 0, wins: 0, count: 0 };
+    cur.pnl += p;
+    cur.wins += p > 0 ? 1 : 0;
+    cur.count += 1;
+    map.set(t.symbol, cur);
+  }
+  return [...map.entries()]
+    .map(([symbol, v]) => ({
+      symbol,
+      pnl: Number(v.pnl.toFixed(2)),
+      winRate: v.count ? v.wins / v.count : 0,
+      count: v.count,
+    }))
+    .sort((a, b) => b.pnl - a.pnl);
+}
