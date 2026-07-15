@@ -60,8 +60,17 @@ function TradesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  const openTrades = useMemo(
+    () => trades.filter((t) => !t.exitDate || t.exitPrice == null),
+    [trades],
+  );
+  const closedTrades = useMemo(
+    () => trades.filter((t) => !!t.exitDate && t.exitPrice != null),
+    [trades],
+  );
+
   const filtered = useMemo(() => {
-    let out = [...trades];
+    let out = [...closedTrades];
     if (q) out = out.filter((t) => t.symbol.toLowerCase().includes(q.toLowerCase()));
     if (dirFilter !== "all") out = out.filter((t) => t.direction === dirFilter);
     if (stratFilter !== "all") out = out.filter((t) => t.strategy === stratFilter);
@@ -77,7 +86,7 @@ function TradesPage() {
       return 0;
     });
     return out;
-  }, [trades, q, dirFilter, stratFilter, dateFrom, dateTo, sortKey, sortDir]);
+  }, [closedTrades, q, dirFilter, stratFilter, dateFrom, dateTo, sortKey, sortDir]);
 
   function openNew() {
     setEditing({
