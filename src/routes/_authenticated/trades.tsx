@@ -60,8 +60,17 @@ function TradesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  const openTrades = useMemo(
+    () => trades.filter((t) => !t.exitDate || t.exitPrice == null),
+    [trades],
+  );
+  const closedTrades = useMemo(
+    () => trades.filter((t) => !!t.exitDate && t.exitPrice != null),
+    [trades],
+  );
+
   const filtered = useMemo(() => {
-    let out = [...trades];
+    let out = [...closedTrades];
     if (q) out = out.filter((t) => t.symbol.toLowerCase().includes(q.toLowerCase()));
     if (dirFilter !== "all") out = out.filter((t) => t.direction === dirFilter);
     if (stratFilter !== "all") out = out.filter((t) => t.strategy === stratFilter);
@@ -77,7 +86,7 @@ function TradesPage() {
       return 0;
     });
     return out;
-  }, [trades, q, dirFilter, stratFilter, dateFrom, dateTo, sortKey, sortDir]);
+  }, [closedTrades, q, dirFilter, stratFilter, dateFrom, dateTo, sortKey, sortDir]);
 
   function openNew() {
     setEditing({
@@ -113,13 +122,69 @@ function TradesPage() {
     <div>
       <PageHeader
         title="יומן עסקאות"
-        subtitle={`${trades.length} עסקאות סה"כ`}
+        subtitle={`${closedTrades.length} סגורות · ${openTrades.length} פתוחות`}
         actions={
           <Button onClick={openNew} className="gap-1">
             <Plus className="h-4 w-4" /> עסקה חדשה
           </Button>
         }
       />
+
+      {openTrades.length > 0 && (
+        <GlassCard className="mb-4">
+          <div className="mb-3 flex items-baseline justify-between">
+            <div className="text-sm font-semibold">פוזיציות פתוחות</div>
+            <div className="text-xs text-muted-foreground">{openTrades.length} פוזיציות</div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[600px] text-sm">
+              <thead>
+                <tr className="text-muted-foreground">
+                  <th className="p-2 text-right font-medium">סימבול</th>
+                  <th className="p-2 text-right font-medium">כיוון</th>
+                  <th className="p-2 text-right font-medium">תאריך כניסה</th>
+                  <th className="p-2 text-right font-medium">כמות</th>
+                  <th className="p-2 text-right font-medium">מחיר כניסה</th>
+                  <th className="p-2 text-right font-medium">שווי עלות</th>
+                  <th className="p-2 text-right font-medium"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...openTrades]
+                  .sort((a, b) => b.entryDate.localeCompare(a.entryDate))
+                  .map((t) => {
+                    const cost = t.entryPrice * t.quantity;
+                    return (
+                      <tr key={t.id} className="border-t border-white/5 bg-[oklch(0.82_0.18_200/0.04)]">
+                        <td className="p-2 font-semibold" dir="ltr">{t.symbol}</td>
+                        <td className="p-2">
+                          <span className={`rounded px-1.5 py-0.5 text-xs ${t.direction === "long" ? "bg-profit/20 text-profit" : "bg-loss/20 text-loss"}`}>
+                            {t.direction === "long" ? "לונג" : "שורט"}
+                          </span>
+                        </td>
+                        <td className="p-2" dir="ltr">{t.entryDate.slice(0, 10)}</td>
+                        <td className="p-2" dir="ltr">{t.quantity}</td>
+                        <td className="p-2" dir="ltr">${t.entryPrice.toFixed(2)}</td>
+                        <td className="p-2 font-semibold" dir="ltr">${cost.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="p-2">
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => openEdit(t)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => setDeleteId(t.id)}>
+                              <Trash2 className="h-4 w-4 text-loss" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+        </GlassCard>
+      )}
+
 
       <GlassCard className="mb-4">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
@@ -161,6 +226,11 @@ function TradesPage() {
       </GlassCard>
 
       <GlassCard>
+        <div className="mb-3 flex items-baseline justify-between">
+          <div className="text-sm font-semibold">עסקאות סגורות</div>
+          <div className="text-xs text-muted-foreground">{filtered.length} מתוך {closedTrades.length}</div>
+        </div>
+
         {filtered.length === 0 ? (
           <p className="py-8 text-center text-muted-foreground">לא נמצאו עסקאות התואמות לסינון.</p>
         ) : (
