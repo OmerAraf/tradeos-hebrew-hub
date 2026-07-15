@@ -226,6 +226,11 @@ function TradesPage() {
       </GlassCard>
 
       <GlassCard>
+        <div className="mb-3 flex items-baseline justify-between">
+          <div className="text-sm font-semibold">עסקאות סגורות</div>
+          <div className="text-xs text-muted-foreground">{filtered.length} מתוך {closedTrades.length}</div>
+        </div>
+
         {filtered.length === 0 ? (
           <p className="py-8 text-center text-muted-foreground">לא נמצאו עסקאות התואמות לסינון.</p>
         ) : (
