@@ -56,6 +56,7 @@ type SortKey = "entryDate" | "symbol" | "pnl";
 
 function TradesPage() {
   const trades = useTrades();
+  const router = useRouter();
   const [q, setQ] = useState("");
   const [dirFilter, setDirFilter] = useState<string>("all");
   const [stratFilter, setStratFilter] = useState<string>("all");
@@ -66,6 +67,7 @@ function TradesPage() {
   const [editing, setEditing] = useState<Trade | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
 
   const openTrades = useMemo(
     () => trades.filter((t) => !t.exitDate || t.exitPrice == null),
