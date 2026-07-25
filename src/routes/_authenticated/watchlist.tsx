@@ -100,11 +100,12 @@ function WatchlistPage() {
         <button
           type="submit"
           disabled={busy}
-          className="flex items-center gap-1 rounded-xl neon-border bg-primary/10 px-3 py-2 text-sm font-semibold text-neon transition hover:bg-primary/20 disabled:opacity-50"
+          className="flex min-h-11 items-center gap-1 rounded-xl neon-border bg-primary/10 px-4 py-2 text-sm font-semibold text-neon transition hover:bg-primary/20 disabled:opacity-50 active:scale-95"
         >
           <Plus className="h-4 w-4" />
-          הוסף
+          {busy ? "מוסיף..." : "הוסף"}
         </button>
+
         {err && <span className="text-sm text-loss">{err}</span>}
       </form>
 
