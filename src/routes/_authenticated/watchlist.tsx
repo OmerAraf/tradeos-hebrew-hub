@@ -160,19 +160,22 @@ function WatchlistCard({
         <div className="flex items-center gap-1">
           <button
             onClick={onToggle}
-            className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-white/5 hover:text-foreground"
+            aria-expanded={expanded}
+            className="flex min-h-11 items-center gap-1 rounded-lg px-3 py-2 text-xs text-muted-foreground hover:bg-white/5 hover:text-foreground active:scale-95"
           >
             {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             {expanded ? "סגור" : "הרחב"}
           </button>
           <button
             onClick={onRemove}
+            aria-label={`הסר את ${item.symbol} מרשימת המעקב`}
             title="הסר"
-            className="flex items-center rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-loss/10 hover:text-loss"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg px-3 py-2 text-xs text-muted-foreground hover:bg-loss/10 hover:text-loss active:scale-95"
           >
             <Trash2 className="h-4 w-4" />
           </button>
         </div>
+
       </div>
 
       <button onClick={onToggle} className="block w-full text-right">
