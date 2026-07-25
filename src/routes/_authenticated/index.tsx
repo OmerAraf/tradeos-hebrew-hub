@@ -160,8 +160,9 @@ function Dashboard() {
       )}
 
       <div className="mt-4">
-        <NewsPanel />
+        <NewsPanel variant="summary" limit={3} />
       </div>
+
     </div>
   );
 }
