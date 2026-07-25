@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { MoreVertical, Pencil, Plus, Trash2 } from "lucide-react";
 import { useTrades } from "@/lib/use-trades";
 import { deleteTrade, newId, upsertTrade } from "@/lib/trade-store";
 import { fmtMoney, pnl, rMultiple, type Direction, type Strategy, type Trade } from "@/lib/trade-types";
@@ -33,7 +33,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/_authenticated/trades")({
   head: () => ({
