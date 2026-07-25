@@ -502,4 +502,3 @@ function RowActions({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => 
   );
 }
 
-}
