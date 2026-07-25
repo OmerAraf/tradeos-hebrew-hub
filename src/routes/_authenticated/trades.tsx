@@ -186,15 +186,9 @@ function TradesPage() {
                         <td className="p-2" dir="ltr">${t.entryPrice.toFixed(2)}</td>
                         <td className="p-2 font-semibold" dir="ltr">${cost.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         <td className="p-2">
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => openEdit(t)}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => setDeleteId(t.id)}>
-                              <Trash2 className="h-4 w-4 text-loss" />
-                            </Button>
-                          </div>
+                          <RowActions onEdit={() => openEdit(t)} onDelete={() => setDeleteId(t.id)} />
                         </td>
+
                       </tr>
                     );
                   })}
