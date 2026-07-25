@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { MoreVertical, Pencil, Plus, Trash2 } from "lucide-react";
 import { useTrades } from "@/lib/use-trades";
 import { deleteTrade, newId, upsertTrade } from "@/lib/trade-store";
 import { fmtMoney, pnl, rMultiple, type Direction, type Strategy, type Trade } from "@/lib/trade-types";
@@ -33,7 +33,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/_authenticated/trades")({
   head: () => ({
@@ -49,6 +56,7 @@ type SortKey = "entryDate" | "symbol" | "pnl";
 
 function TradesPage() {
   const trades = useTrades();
+  const router = useRouter();
   const [q, setQ] = useState("");
   const [dirFilter, setDirFilter] = useState<string>("all");
   const [stratFilter, setStratFilter] = useState<string>("all");
@@ -59,6 +67,7 @@ function TradesPage() {
   const [editing, setEditing] = useState<Trade | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
 
   const openTrades = useMemo(
     () => trades.filter((t) => !t.exitDate || t.exitPrice == null),
@@ -118,6 +127,16 @@ function TradesPage() {
     else { setSortKey(k); setSortDir("desc"); }
   }
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.location.hash === "#new") {
+      openNew();
+      router.navigate({ to: "/trades", hash: "", replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.state.location.hash]);
+
+
   return (
     <div>
       <PageHeader
@@ -167,15 +186,9 @@ function TradesPage() {
                         <td className="p-2" dir="ltr">${t.entryPrice.toFixed(2)}</td>
                         <td className="p-2 font-semibold" dir="ltr">${cost.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         <td className="p-2">
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => openEdit(t)}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => setDeleteId(t.id)}>
-                              <Trash2 className="h-4 w-4 text-loss" />
-                            </Button>
-                          </div>
+                          <RowActions onEdit={() => openEdit(t)} onDelete={() => setDeleteId(t.id)} />
                         </td>
+
                       </tr>
                     );
                   })}
@@ -279,15 +292,9 @@ function TradesPage() {
                       </td>
                       <td className="p-2" dir="ltr">{r == null ? "—" : r.toFixed(2)}</td>
                       <td className="p-2">
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => openEdit(t)}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => setDeleteId(t.id)}>
-                            <Trash2 className="h-4 w-4 text-loss" />
-                          </Button>
-                        </div>
+                        <RowActions onEdit={() => openEdit(t)} onDelete={() => setDeleteId(t.id)} />
                       </td>
+
                     </tr>
                   );
                 })}
@@ -474,3 +481,24 @@ function TradeDialog({
     </Dialog>
   );
 }
+
+function RowActions({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" aria-label="פעולות">
+          <MoreVertical className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-[10rem]">
+        <DropdownMenuItem onSelect={onEdit} className="gap-2 py-3">
+          <Pencil className="h-4 w-4" /> עריכה
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onDelete} className="gap-2 py-3 text-loss focus:text-loss">
+          <Trash2 className="h-4 w-4" /> מחיקה
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
