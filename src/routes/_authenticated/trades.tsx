@@ -127,6 +127,16 @@ function TradesPage() {
     else { setSortKey(k); setSortDir("desc"); }
   }
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.location.hash === "#new") {
+      openNew();
+      router.navigate({ to: "/trades", hash: "", replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.state.location.hash]);
+
+
   return (
     <div>
       <PageHeader
