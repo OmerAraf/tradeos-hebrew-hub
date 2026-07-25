@@ -14,6 +14,8 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedWatchlistRouteImport } from './routes/_authenticated/watchlist'
 import { Route as AuthenticatedTradesRouteImport } from './routes/_authenticated/trades'
+import { Route as AuthenticatedOpenRouteImport } from './routes/_authenticated/open'
+import { Route as AuthenticatedNewsRouteImport } from './routes/_authenticated/news'
 import { Route as AuthenticatedInsightsRouteImport } from './routes/_authenticated/insights'
 import { Route as AuthenticatedImportRouteImport } from './routes/_authenticated/import'
 
@@ -41,6 +43,16 @@ const AuthenticatedTradesRoute = AuthenticatedTradesRouteImport.update({
   path: '/trades',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedOpenRoute = AuthenticatedOpenRouteImport.update({
+  id: '/open',
+  path: '/open',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedNewsRoute = AuthenticatedNewsRouteImport.update({
+  id: '/news',
+  path: '/news',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedInsightsRoute = AuthenticatedInsightsRouteImport.update({
   id: '/insights',
   path: '/insights',
@@ -57,6 +69,8 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/import': typeof AuthenticatedImportRoute
   '/insights': typeof AuthenticatedInsightsRoute
+  '/news': typeof AuthenticatedNewsRoute
+  '/open': typeof AuthenticatedOpenRoute
   '/trades': typeof AuthenticatedTradesRoute
   '/watchlist': typeof AuthenticatedWatchlistRoute
 }
@@ -64,6 +78,8 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/import': typeof AuthenticatedImportRoute
   '/insights': typeof AuthenticatedInsightsRoute
+  '/news': typeof AuthenticatedNewsRoute
+  '/open': typeof AuthenticatedOpenRoute
   '/trades': typeof AuthenticatedTradesRoute
   '/watchlist': typeof AuthenticatedWatchlistRoute
   '/': typeof AuthenticatedIndexRoute
@@ -74,21 +90,41 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/import': typeof AuthenticatedImportRoute
   '/_authenticated/insights': typeof AuthenticatedInsightsRoute
+  '/_authenticated/news': typeof AuthenticatedNewsRoute
+  '/_authenticated/open': typeof AuthenticatedOpenRoute
   '/_authenticated/trades': typeof AuthenticatedTradesRoute
   '/_authenticated/watchlist': typeof AuthenticatedWatchlistRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/import' | '/insights' | '/trades' | '/watchlist'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/import'
+    | '/insights'
+    | '/news'
+    | '/open'
+    | '/trades'
+    | '/watchlist'
   fileRoutesByTo: FileRoutesByTo
-  to: '/auth' | '/import' | '/insights' | '/trades' | '/watchlist' | '/'
+  to:
+    | '/auth'
+    | '/import'
+    | '/insights'
+    | '/news'
+    | '/open'
+    | '/trades'
+    | '/watchlist'
+    | '/'
   id:
     | '__root__'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/import'
     | '/_authenticated/insights'
+    | '/_authenticated/news'
+    | '/_authenticated/open'
     | '/_authenticated/trades'
     | '/_authenticated/watchlist'
     | '/_authenticated/'
@@ -136,6 +172,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTradesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/open': {
+      id: '/_authenticated/open'
+      path: '/open'
+      fullPath: '/open'
+      preLoaderRoute: typeof AuthenticatedOpenRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/news': {
+      id: '/_authenticated/news'
+      path: '/news'
+      fullPath: '/news'
+      preLoaderRoute: typeof AuthenticatedNewsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/insights': {
       id: '/_authenticated/insights'
       path: '/insights'
@@ -156,6 +206,8 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedImportRoute: typeof AuthenticatedImportRoute
   AuthenticatedInsightsRoute: typeof AuthenticatedInsightsRoute
+  AuthenticatedNewsRoute: typeof AuthenticatedNewsRoute
+  AuthenticatedOpenRoute: typeof AuthenticatedOpenRoute
   AuthenticatedTradesRoute: typeof AuthenticatedTradesRoute
   AuthenticatedWatchlistRoute: typeof AuthenticatedWatchlistRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -164,6 +216,8 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedImportRoute: AuthenticatedImportRoute,
   AuthenticatedInsightsRoute: AuthenticatedInsightsRoute,
+  AuthenticatedNewsRoute: AuthenticatedNewsRoute,
+  AuthenticatedOpenRoute: AuthenticatedOpenRoute,
   AuthenticatedTradesRoute: AuthenticatedTradesRoute,
   AuthenticatedWatchlistRoute: AuthenticatedWatchlistRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { RefreshCw, ExternalLink } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { RefreshCw, ExternalLink, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchTranslatedNewsForSymbols, type TranslatedNewsItem } from "@/lib/news.functions";
 import { relativeTimeHe } from "@/lib/relative-time-he";
@@ -22,7 +23,14 @@ function writeLastSeen(ts: number) {
   localStorage.setItem(LAST_SEEN_KEY, String(ts));
 }
 
-export function NewsPanel() {
+export function NewsPanel({
+  variant = "full",
+  limit,
+}: {
+  variant?: "full" | "summary";
+  limit?: number;
+}) {
+  const isSummary = variant === "summary";
   const fetchNews = useServerFn(fetchTranslatedNewsForSymbols);
   const [symbols, setSymbols] = useState<string[]>([]);
   const [items, setItems] = useState<TranslatedNewsItem[]>([]);
@@ -31,7 +39,6 @@ export function NewsPanel() {
   const lastSeenRef = useRef<number>(readLastSeen());
   const [, forceTick] = useState(0);
 
-  // Load watchlist symbols
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -56,7 +63,6 @@ export function NewsPanel() {
     setErr(null);
     try {
       const res = await fetchNews({ data: { symbols } });
-      // Merge with previous, dedupe by link
       setItems((prev) => {
         const seen = new Set<string>();
         const merged: TranslatedNewsItem[] = [];
@@ -66,7 +72,7 @@ export function NewsPanel() {
           merged.push(it);
         }
         merged.sort((a, b) => +new Date(b.publishedAt) - +new Date(a.publishedAt));
-        return merged.slice(0, 30);
+        return merged.slice(0, 60);
       });
     } catch (e) {
       setErr(e instanceof Error ? e.message : "שגיאה בטעינת חדשות");
@@ -75,12 +81,10 @@ export function NewsPanel() {
     }
   }
 
-  // Initial + poll
   useEffect(() => {
     if (symbols.length === 0) return;
     load();
     const iv = setInterval(load, POLL_MS);
-    // Refresh relative timestamps every 60s
     const tick = setInterval(() => forceTick((x) => x + 1), 60_000);
     return () => {
       clearInterval(iv);
@@ -89,10 +93,9 @@ export function NewsPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [symbols.join(",")]);
 
-  // Mark all as seen when user leaves the tab / unmount
   useEffect(() => {
     return () => {
-      if (items.length) {
+      if (!isSummary && items.length) {
         const newest = Math.max(...items.map((i) => +new Date(i.publishedAt)));
         if (isFinite(newest)) {
           writeLastSeen(newest);
@@ -100,7 +103,7 @@ export function NewsPanel() {
         }
       }
     };
-  }, [items]);
+  }, [items, isSummary]);
 
   const newestTs = useMemo(
     () => (items.length ? Math.max(...items.map((i) => +new Date(i.publishedAt))) : 0),
@@ -115,22 +118,33 @@ export function NewsPanel() {
     }
   }
 
+  const shown = limit ? items.slice(0, limit) : items;
+
   return (
     <GlassCard>
       <div className="mb-3 flex items-center justify-between gap-2">
-        <div>
-          <div className="text-sm font-semibold">חדשות</div>
-          <div className="text-xs text-muted-foreground">
-            כותרות עדכניות עבור {symbols.length} סימבולים במעקב, מתורגמות לעברית
+        <div className="min-w-0">
+          <div className="text-sm font-semibold">חדשות חמות</div>
+          <div className="text-xs text-muted-foreground truncate">
+            {isSummary
+              ? `${symbols.length} סימבולים במעקב`
+              : `כותרות עדכניות עבור ${symbols.length} סימבולים במעקב, מתורגמות לעברית`}
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {newestTs > lastSeenRef.current && (
+        <div className="flex items-center gap-2 shrink-0">
+          {!isSummary && newestTs > lastSeenRef.current && (
             <Button variant="ghost" size="sm" onClick={markAllSeen}>
               סמן כנקרא
             </Button>
           )}
-          <Button variant="ghost" size="icon" onClick={load} disabled={loading} title="רענון">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={load}
+            disabled={loading}
+            aria-label="רענון חדשות"
+            title="רענון"
+          >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
         </div>
@@ -138,18 +152,18 @@ export function NewsPanel() {
 
       {symbols.length === 0 ? (
         <p className="py-6 text-center text-sm text-muted-foreground">
-          אין סימבולים ברשימת המעקב. הוסף מניה בכרטיסיית "מעקב" כדי לקבל חדשות.
+          אין סימבולים ברשימת המעקב. הוסף מניה במסך "מעקב" כדי לקבל חדשות.
         </p>
-      ) : items.length === 0 ? (
+      ) : shown.length === 0 ? (
         <p className="py-6 text-center text-sm text-muted-foreground">
           {loading ? "טוען חדשות…" : err ? err : "לא נמצאו חדשות כרגע."}
         </p>
       ) : (
         <ul className="divide-y divide-white/5">
-          {items.map((it) => {
-            const isNew = +new Date(it.publishedAt) > lastSeenRef.current;
+          {shown.map((it) => {
+            const isNew = !isSummary && +new Date(it.publishedAt) > lastSeenRef.current;
             return (
-              <li key={it.link} className="py-2.5">
+              <li key={it.link} className={isSummary ? "py-2" : "py-3"}>
                 <a
                   href={it.link}
                   target="_blank"
@@ -173,19 +187,33 @@ export function NewsPanel() {
                         {relativeTimeHe(it.publishedAt)} · {it.source}
                       </span>
                     </div>
-                    <div className="mt-1 text-sm text-foreground group-hover:text-neon">
+                    <div className={`mt-1 ${isSummary ? "text-sm" : "text-base"} text-foreground group-hover:text-neon`}>
                       {it.titleHe}
                     </div>
-                    <div className="mt-0.5 text-[11px] text-muted-foreground/70" dir="ltr">
-                      {it.titleEn}
-                    </div>
+                    {!isSummary && (
+                      <div className="mt-0.5 text-xs text-muted-foreground/70" dir="ltr">
+                        {it.titleEn}
+                      </div>
+                    )}
                   </div>
-                  <ExternalLink className="mt-1 h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
+                  <ExternalLink className="mt-1 h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-60 transition group-hover:opacity-100" />
                 </a>
               </li>
             );
           })}
         </ul>
+      )}
+
+      {isSummary && (
+        <div className="mt-3 border-t border-white/5 pt-3 text-center">
+          <Link
+            to="/news"
+            className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold text-neon hover:bg-neon/10"
+          >
+            לכל החדשות
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+        </div>
       )}
     </GlassCard>
   );
