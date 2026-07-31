@@ -7,6 +7,7 @@ import { fetchTranslatedNewsForSymbols, type TranslatedNewsItem } from "@/lib/ne
 import { relativeTimeHe } from "@/lib/relative-time-he";
 import { GlassCard } from "@/components/ui-blocks";
 import { Button } from "@/components/ui/button";
+import { useRefreshHandler } from "@/lib/refresh";
 
 const LAST_SEEN_KEY = "tradeos_news_lastseen";
 const POLL_MS = 3 * 60 * 1000; // 3 minutes
@@ -80,6 +81,13 @@ export function NewsPanel({
       setLoading(false);
     }
   }
+
+  useRefreshHandler(async () => {
+    const { data } = await supabase.from("watchlist").select("symbol");
+    const uniq = Array.from(new Set((data ?? []).map((r) => String(r.symbol).toUpperCase())));
+    setSymbols(uniq);
+    await load();
+  });
 
   useEffect(() => {
     if (symbols.length === 0) return;

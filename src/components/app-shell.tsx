@@ -1,5 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { toast } from "sonner";
 import {
   Activity,
   BarChart3,
@@ -8,10 +9,12 @@ import {
   LogOut,
   Newspaper,
   Plus,
+  RefreshCw,
   Sparkles,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { clearLocalCache } from "@/lib/trade-store";
+import { refreshAll } from "@/lib/refresh";
 
 const NAV = [
   { to: "/", label: "דשבורד", short: "דשבורד", icon: BarChart3 },
@@ -25,6 +28,10 @@ const NAV = [
 // Bottom-bar height + spacing reserved for content so nothing hides behind it.
 const BOTTOM_BAR_RESERVE = "6.5rem"; // ~104px covers tabs + safe-area
 
+const PULL_TRIGGER = 70; // px of pull needed to fire a refresh
+const PULL_MAX = 110;
+const AWAY_MS = 60_000; // refresh on return after being hidden this long
+
 async function signOut() {
   await supabase.auth.signOut();
   clearLocalCache();
@@ -33,6 +40,77 @@ async function signOut() {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [refreshing, setRefreshing] = useState(false);
+  const [pull, setPull] = useState(0);
+  const refreshingRef = useRef(false);
+  const startYRef = useRef<number | null>(null);
+
+  const doRefresh = useCallback(async () => {
+    if (refreshingRef.current) return;
+    refreshingRef.current = true;
+    setRefreshing(true);
+    try {
+      await refreshAll();
+      toast.success("הנתונים עודכנו");
+    } catch (e) {
+      const reason = e instanceof Error ? e.message : String(e);
+      toast.error("הרענון נכשל", { description: reason });
+    } finally {
+      refreshingRef.current = false;
+      setRefreshing(false);
+      setPull(0);
+    }
+  }, []);
+
+  // Refresh when returning to the app after it was backgrounded for a while.
+  useEffect(() => {
+    let hiddenAt = 0;
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        hiddenAt = Date.now();
+      } else if (hiddenAt && Date.now() - hiddenAt > AWAY_MS) {
+        hiddenAt = 0;
+        void doRefresh();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [doRefresh]);
+
+  // Pull-to-refresh (mobile). Purely additive: never blocks normal scrolling.
+  useEffect(() => {
+    const onStart = (e: TouchEvent) => {
+      startYRef.current = window.scrollY <= 0 ? e.touches[0].clientY : null;
+    };
+    const onMove = (e: TouchEvent) => {
+      if (startYRef.current === null || refreshingRef.current) return;
+      if (window.scrollY > 0) {
+        startYRef.current = null;
+        setPull(0);
+        return;
+      }
+      const delta = e.touches[0].clientY - startYRef.current;
+      setPull(delta > 0 ? Math.min(delta * 0.5, PULL_MAX) : 0);
+    };
+    const onEnd = () => {
+      if (startYRef.current !== null && pull >= PULL_TRIGGER) void doRefresh();
+      else setPull(0);
+      startYRef.current = null;
+    };
+    window.addEventListener("touchstart", onStart, { passive: true });
+    window.addEventListener("touchmove", onMove, { passive: true });
+    window.addEventListener("touchend", onEnd, { passive: true });
+    window.addEventListener("touchcancel", onEnd, { passive: true });
+    return () => {
+      window.removeEventListener("touchstart", onStart);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onEnd);
+      window.removeEventListener("touchcancel", onEnd);
+    };
+  }, [doRefresh, pull]);
+
+  const pullActive = pull > 0 || refreshing;
+
 
   return (
     <div className="min-h-dvh" style={{ paddingTop: "env(safe-area-inset-top)" }}>
@@ -78,16 +156,46 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </nav>
 
-          <button
-            onClick={signOut}
-            aria-label="התנתקות"
-            title="התנתקות"
-            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg px-2.5 py-2 text-muted-foreground transition-all hover:bg-white/5 hover:text-loss shrink-0 active:scale-95"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => void doRefresh()}
+              disabled={refreshing}
+              aria-label="רענן"
+              title="רענן"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg px-2.5 py-2 text-muted-foreground transition-all hover:bg-white/5 hover:text-neon active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+              <span className="sr-only">רענן</span>
+            </button>
+            <button
+              onClick={signOut}
+              aria-label="התנתקות"
+              title="התנתקות"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg px-2.5 py-2 text-muted-foreground transition-all hover:bg-white/5 hover:text-loss active:scale-95"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
         </div>
+
+        {/* Pull-to-refresh indicator */}
+        {pullActive && (
+          <div
+            className="flex items-center justify-center overflow-hidden md:hidden"
+            style={{ height: refreshing ? 44 : Math.min(pull, PULL_MAX) }}
+            aria-hidden="true"
+          >
+            <div className="flex items-center gap-2 text-xs text-neon">
+              <RefreshCw
+                className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+                style={{ transform: refreshing ? undefined : `rotate(${pull * 3}deg)` }}
+              />
+              <span>{refreshing ? "מרענן…" : pull >= PULL_TRIGGER ? "שחרר לרענון" : "משוך לרענון"}</span>
+            </div>
+          </div>
+        )}
       </header>
+
 
       <main
         className="mx-auto max-w-7xl px-3 py-4 md:px-8 md:py-10"
