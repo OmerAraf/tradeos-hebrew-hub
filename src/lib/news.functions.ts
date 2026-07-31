@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { fetchDeepNewsForSymbol } from "./news-deep.server";
 
 export interface NewsItem {
   title: string;
@@ -222,7 +223,7 @@ export const fetchTranslatedNewsForSymbol = createServerFn({ method: "GET" })
     return { symbol };
   })
   .handler(async ({ data }) => {
-    const items = await fetchDeepForSymbol(data.symbol);
+    const items = await fetchDeepNewsForSymbol(data.symbol);
 
     const byKey = new Map<string, NewsItem>();
     for (const item of items) {
