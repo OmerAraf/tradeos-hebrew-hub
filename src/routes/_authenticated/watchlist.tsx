@@ -11,6 +11,7 @@ import {
   removeSymbol,
   type WatchlistItem,
 } from "@/lib/watchlist-store";
+import { useRefreshHandler } from "@/lib/refresh";
 
 
 export const Route = createFileRoute("/_authenticated/watchlist")({
@@ -40,6 +41,10 @@ function WatchlistPage() {
   useEffect(() => {
     reload();
   }, []);
+
+  useRefreshHandler(async () => {
+    setItems(await fetchWatchlist());
+  });
 
   async function onAdd(e: React.FormEvent) {
     e.preventDefault();
