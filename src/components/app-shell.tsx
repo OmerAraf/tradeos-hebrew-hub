@@ -156,16 +156,46 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </nav>
 
-          <button
-            onClick={signOut}
-            aria-label="התנתקות"
-            title="התנתקות"
-            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg px-2.5 py-2 text-muted-foreground transition-all hover:bg-white/5 hover:text-loss shrink-0 active:scale-95"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => void doRefresh()}
+              disabled={refreshing}
+              aria-label="רענן"
+              title="רענן"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg px-2.5 py-2 text-muted-foreground transition-all hover:bg-white/5 hover:text-neon active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+              <span className="sr-only">רענן</span>
+            </button>
+            <button
+              onClick={signOut}
+              aria-label="התנתקות"
+              title="התנתקות"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg px-2.5 py-2 text-muted-foreground transition-all hover:bg-white/5 hover:text-loss active:scale-95"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
         </div>
+
+        {/* Pull-to-refresh indicator */}
+        {pullActive && (
+          <div
+            className="flex items-center justify-center overflow-hidden md:hidden"
+            style={{ height: refreshing ? 44 : Math.min(pull, PULL_MAX) }}
+            aria-hidden="true"
+          >
+            <div className="flex items-center gap-2 text-xs text-neon">
+              <RefreshCw
+                className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+                style={{ transform: refreshing ? undefined : `rotate(${pull * 3}deg)` }}
+              />
+              <span>{refreshing ? "מרענן…" : pull >= PULL_TRIGGER ? "שחרר לרענון" : "משוך לרענון"}</span>
+            </div>
+          </div>
+        )}
       </header>
+
 
       <main
         className="mx-auto max-w-7xl px-3 py-4 md:px-8 md:py-10"
