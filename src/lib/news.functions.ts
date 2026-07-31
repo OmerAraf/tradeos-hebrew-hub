@@ -214,3 +214,45 @@ export const fetchTranslatedNewsForSymbols = createServerFn({ method: "GET" })
 
     return { items: out };
   });
+
+export const fetchTranslatedNewsForSymbol = createServerFn({ method: "GET" })
+  .inputValidator((d: { symbol: string }) => {
+    const symbol = String(d?.symbol || "").trim().toUpperCase();
+    if (!/^[A-Z0-9.\-]{1,10}$/.test(symbol)) throw new Error("invalid symbol");
+    return { symbol };
+  })
+  .handler(async ({ data }) => {
+    const items = await fetchDeepForSymbol(data.symbol);
+
+    const byKey = new Map<string, NewsItem>();
+    for (const item of items) {
+      const key = item.link || normalizeTitle(item.title).slice(0, 80);
+      if (!key || byKey.has(key)) continue;
+      byKey.set(key, item);
+    }
+    const merged = Array.from(byKey.values()).sort(
+      (a, b) => +new Date(b.publishedAt) - +new Date(a.publishedAt),
+    );
+    const trimmed = merged.slice(0, 50);
+
+    const missing = trimmed.filter((x) => !translationCache.has(x.link));
+    for (let i = 0; i < missing.length; i += 25) {
+      const chunk = missing.slice(i, i + 25);
+      const map = await translateBatch(chunk.map((x, j) => ({ id: `n${j}`, text: x.title })));
+      chunk.forEach((x, j) => {
+        const heb = map[`n${j}`];
+        if (heb && heb.trim()) translationCache.set(x.link, heb.trim());
+      });
+    }
+
+    const out: TranslatedNewsItem[] = trimmed.map((item) => ({
+      symbol: data.symbol,
+      titleEn: item.title,
+      titleHe: translationCache.get(item.link) || item.title,
+      link: item.link,
+      source: item.source,
+      publishedAt: item.publishedAt,
+    }));
+
+    return { items: out };
+  });
