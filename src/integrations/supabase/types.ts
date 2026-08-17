@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      news_muted_symbols: {
+        Row: {
+          created_at: string
+          id: string
+          symbol: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          symbol: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          symbol?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       trades: {
         Row: {
           created_at: string
