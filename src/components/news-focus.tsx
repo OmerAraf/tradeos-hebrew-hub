@@ -150,7 +150,8 @@ export function NewsSymbolChips({
   );
 }
 
-const LONG_PRESS_MS = 550;
+const LONG_PRESS_MS = 450;
+const MOVE_TOLERANCE_PX = 12;
 
 function Chip({
   active,
@@ -165,15 +166,18 @@ function Chip({
 }) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fired = useRef(false);
+  const start = useRef<{ x: number; y: number } | null>(null);
   const [pressing, setPressing] = useState(false);
 
   function clear() {
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
+    start.current = null;
     setPressing(false);
   }
 
   function trigger() {
+    timer.current = null;
     fired.current = true;
     setPressing(false);
     navigator.vibrate?.(40);
@@ -185,34 +189,56 @@ function Chip({
   return (
     <button
       type="button"
-      onClick={() => {
+      style={{ touchAction: "pan-x" }}
+      onClick={(e) => {
         if (fired.current) {
-          fired.current = false;
+          e.preventDefault();
           return;
         }
         onClick();
       }}
-      onPointerDown={() => {
+      onPointerDown={(e) => {
         if (!onLongPress) return;
         fired.current = false;
+        start.current = { x: e.clientX, y: e.clientY };
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId);
+        } catch {
+          /* pointer capture unsupported */
+        }
         setPressing(true);
         timer.current = setTimeout(trigger, LONG_PRESS_MS);
       }}
+      onPointerMove={(e) => {
+        if (!timer.current || !start.current) return;
+        const d = Math.hypot(e.clientX - start.current.x, e.clientY - start.current.y);
+        if (d > MOVE_TOLERANCE_PX) clear();
+      }}
       onPointerUp={clear}
-      onPointerLeave={clear}
       onPointerCancel={clear}
+      onKeyDown={(e) => {
+        if (!onLongPress) return;
+        if (e.key === "Delete" || e.key === "Backspace") {
+          e.preventDefault();
+          clear();
+          onLongPress();
+        }
+      }}
       onContextMenu={(e) => {
         if (!onLongPress) return;
         e.preventDefault();
+        if (fired.current) return;
         clear();
         trigger();
       }}
       aria-pressed={active}
-      className={`flex min-h-11 items-center whitespace-nowrap rounded-xl px-4 text-sm font-semibold transition active:scale-95 ${
-        pressing ? "scale-95 opacity-70" : ""
+      aria-keyshortcuts={onLongPress ? "Delete" : undefined}
+      className={`flex min-h-11 select-none touch-manipulation items-center whitespace-nowrap rounded-xl px-4 text-sm font-semibold transition-all duration-500 [-webkit-touch-callout:none] [-webkit-user-select:none] ${
+        pressing ? "scale-95 opacity-80 ring-2 ring-neon/60" : ""
       } ${
         active
           ? "neon-border bg-primary/20 text-neon"
+
           : "glass border border-white/10 text-muted-foreground hover:text-foreground"
       }`}
     >
