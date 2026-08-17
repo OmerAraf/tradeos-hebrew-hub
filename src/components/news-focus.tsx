@@ -206,7 +206,9 @@ function Chip({
     <button
       type="button"
       onClick={onClick}
+      onContextMenu={(e) => e.preventDefault()}
       aria-pressed={active}
+      style={NO_SELECT}
       className={`flex min-h-11 select-none touch-manipulation items-center gap-1.5 whitespace-nowrap rounded-xl px-3 text-sm font-semibold transition-all duration-300 [-webkit-touch-callout:none] [-webkit-user-select:none] ${
         editing ? "border border-dashed border-white/20 bg-white/5" : ""
       } ${
