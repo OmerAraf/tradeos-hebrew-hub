@@ -26,6 +26,12 @@ import {
 } from "@/components/ui/alert-dialog";
 
 
+const NO_SELECT: React.CSSProperties = {
+  WebkitUserSelect: "none",
+  userSelect: "none",
+  WebkitTouchCallout: "none",
+} as const;
+
 /** Chips row: "הכל" + union of watchlist symbols and open-position symbols. */
 export function NewsSymbolChips({
   selected,
