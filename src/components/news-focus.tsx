@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { useRefreshHandler } from "@/lib/refresh";
 import { useTrades } from "@/lib/use-trades";
 import { isOpen } from "@/lib/trade-types";
+import { useMutedSymbols } from "@/lib/news-mute";
+
 
 /** Chips row: "הכל" + union of watchlist symbols and open-position symbols. */
 export function NewsSymbolChips({
@@ -37,11 +39,15 @@ export function NewsSymbolChips({
     };
   }, []);
 
+  const { muted } = useMutedSymbols();
+
   const symbols = useMemo(() => {
     const set = new Set<string>(watchSymbols);
     for (const t of trades) if (isOpen(t)) set.add(t.symbol.toUpperCase());
+    for (const m of muted) set.delete(m.toUpperCase());
     return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [watchSymbols, trades]);
+  }, [watchSymbols, trades, muted]);
+
 
   function submitQuery(e: React.FormEvent) {
     e.preventDefault();
