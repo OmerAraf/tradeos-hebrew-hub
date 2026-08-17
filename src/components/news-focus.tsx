@@ -38,6 +38,7 @@ export function NewsSymbolChips({
   const [watchSymbols, setWatchSymbols] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const [pendingRemove, setPendingRemove] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -60,6 +61,10 @@ export function NewsSymbolChips({
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [watchSymbols, trades, muted]);
 
+  // Exit edit mode automatically once no removable chips remain.
+  useEffect(() => {
+    if (editing && symbols.length === 0) setEditing(false);
+  }, [editing, symbols.length]);
 
   function submitQuery(e: React.FormEvent) {
     e.preventDefault();
@@ -102,11 +107,27 @@ export function NewsSymbolChips({
                 key={s}
                 active={selected === s}
                 onClick={() => onSelect(s)}
-                onLongPress={() => setPendingRemove(s)}
+                editing={editing}
+                onRemove={() => setPendingRemove(s)}
               >
                 <span dir="ltr">{s}</span>
               </Chip>
             ))}
+            {symbols.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setEditing((v) => !v)}
+                aria-pressed={editing}
+                aria-label={editing ? "סיום עריכה" : "עריכת סימבולים"}
+                className={`flex min-h-11 min-w-11 select-none touch-manipulation items-center justify-center rounded-xl text-sm font-semibold transition-all duration-300 [-webkit-touch-callout:none] [-webkit-user-select:none] ${
+                  editing
+                    ? "neon-border bg-primary/20 text-neon"
+                    : "glass border border-white/10 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {editing ? <Check className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
+              </button>
+            )}
           </div>
         </div>
         <form onSubmit={submitQuery} className="flex shrink-0 items-center gap-2">
@@ -124,9 +145,14 @@ export function NewsSymbolChips({
         </form>
       </div>
 
-      {symbols.length > 0 && muted.length === 0 && (
+      {symbols.length > 0 && !editing && muted.length === 0 && (
         <p className="text-xs text-muted-foreground">
-          לחיצה ארוכה על סימבול מסירה אותו מהחדשות
+          לחץ על העיפרון כדי להסיר סימבולים מהחדשות
+        </p>
+      )}
+      {editing && (
+        <p className="text-xs text-muted-foreground">
+          לחץ על ✕ ליד סימבול כדי להסיר אותו מהחדשות
         </p>
       )}
 
@@ -150,99 +176,57 @@ export function NewsSymbolChips({
   );
 }
 
-const LONG_PRESS_MS = 450;
-const MOVE_TOLERANCE_PX = 12;
-
 function Chip({
   active,
   onClick,
-  onLongPress,
+  editing = false,
+  onRemove,
   children,
 }: {
   active: boolean;
   onClick: () => void;
-  onLongPress?: () => void;
+  editing?: boolean;
+  onRemove?: () => void;
   children: React.ReactNode;
 }) {
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const fired = useRef(false);
-  const start = useRef<{ x: number; y: number } | null>(null);
-  const [pressing, setPressing] = useState(false);
-
-  function clear() {
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = null;
-    start.current = null;
-    setPressing(false);
-  }
-
-  function trigger() {
-    timer.current = null;
-    fired.current = true;
-    setPressing(false);
-    navigator.vibrate?.(40);
-    onLongPress?.();
-  }
-
-  useEffect(() => clear, []);
-
   return (
     <button
       type="button"
-      style={{ touchAction: "pan-x" }}
-      onClick={(e) => {
-        if (fired.current) {
-          e.preventDefault();
-          return;
-        }
-        onClick();
-      }}
-      onPointerDown={(e) => {
-        if (!onLongPress) return;
-        fired.current = false;
-        start.current = { x: e.clientX, y: e.clientY };
-        try {
-          e.currentTarget.setPointerCapture(e.pointerId);
-        } catch {
-          /* pointer capture unsupported */
-        }
-        setPressing(true);
-        timer.current = setTimeout(trigger, LONG_PRESS_MS);
-      }}
-      onPointerMove={(e) => {
-        if (!timer.current || !start.current) return;
-        const d = Math.hypot(e.clientX - start.current.x, e.clientY - start.current.y);
-        if (d > MOVE_TOLERANCE_PX) clear();
-      }}
-      onPointerUp={clear}
-      onPointerCancel={clear}
-      onKeyDown={(e) => {
-        if (!onLongPress) return;
-        if (e.key === "Delete" || e.key === "Backspace") {
-          e.preventDefault();
-          clear();
-          onLongPress();
-        }
-      }}
-      onContextMenu={(e) => {
-        if (!onLongPress) return;
-        e.preventDefault();
-        if (fired.current) return;
-        clear();
-        trigger();
-      }}
+      onClick={onClick}
       aria-pressed={active}
-      aria-keyshortcuts={onLongPress ? "Delete" : undefined}
-      className={`flex min-h-11 select-none touch-manipulation items-center whitespace-nowrap rounded-xl px-4 text-sm font-semibold transition-all duration-500 [-webkit-touch-callout:none] [-webkit-user-select:none] ${
-        pressing ? "scale-95 opacity-80 ring-2 ring-neon/60" : ""
+      className={`flex min-h-11 select-none touch-manipulation items-center gap-1.5 whitespace-nowrap rounded-xl px-3 text-sm font-semibold transition-all duration-300 [-webkit-touch-callout:none] [-webkit-user-select:none] ${
+        editing ? "border border-dashed border-white/20 bg-white/5" : ""
       } ${
         active
           ? "neon-border bg-primary/20 text-neon"
-
-          : "glass border border-white/10 text-muted-foreground hover:text-foreground"
+          : editing
+            ? "text-foreground"
+            : "glass border border-white/10 text-muted-foreground hover:text-foreground"
       }`}
     >
       {children}
+      {editing && onRemove && (
+        <span
+          role="button"
+          tabIndex={0}
+          aria-label="הסר סימבול"
+          onClick={(e) => {
+            e.stopPropagation();
+            navigator.vibrate?.(30);
+            onRemove();
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              e.stopPropagation();
+              onRemove();
+            }
+          }}
+          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-muted-foreground transition hover:bg-loss/20 hover:text-loss"
+        >
+          <X className="h-3 w-3 animate-pulse" />
+        </span>
+      )}
     </button>
   );
 }
