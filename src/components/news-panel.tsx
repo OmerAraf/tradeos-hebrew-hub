@@ -42,8 +42,8 @@ export function NewsPanel({
   const [err, setErr] = useState<string | null>(null);
   const lastSeenRef = useRef<number>(readLastSeen());
   const [, forceTick] = useState(0);
-  const { muted, mute, unmute } = useMutedSymbols();
-  const [pendingMute, setPendingMute] = useState<string | null>(null);
+  const { muted } = useMutedSymbols();
+
 
   const mutedSet = useMemo(() => new Set(muted), [muted]);
   const activeSymbols = useMemo(
