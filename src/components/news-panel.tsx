@@ -52,6 +52,16 @@ export function NewsPanel({
   const [err, setErr] = useState<string | null>(null);
   const lastSeenRef = useRef<number>(readLastSeen());
   const [, forceTick] = useState(0);
+  const { muted, mute, unmute } = useMutedSymbols();
+  const [pendingMute, setPendingMute] = useState<string | null>(null);
+
+  const mutedSet = useMemo(() => new Set(muted), [muted]);
+  const activeSymbols = useMemo(
+    () => symbols.filter((s) => !mutedSet.has(s)),
+    [symbols, mutedSet],
+  );
+  const activeRef = useRef<string[]>(activeSymbols);
+  activeRef.current = activeSymbols;
 
   useEffect(() => {
     let alive = true;
@@ -69,14 +79,15 @@ export function NewsPanel({
   }, []);
 
   async function load() {
-    if (symbols.length === 0) {
+    const targets = activeRef.current;
+    if (targets.length === 0) {
       setItems([]);
       return;
     }
     setLoading(true);
     setErr(null);
     try {
-      const res = await fetchNews({ data: { symbols } });
+      const res = await fetchNews({ data: { symbols: targets } });
       setItems((prev) => {
         const seen = new Set<string>();
         const merged: TranslatedNewsItem[] = [];
@@ -99,11 +110,12 @@ export function NewsPanel({
     const { data } = await supabase.from("watchlist").select("symbol");
     const uniq = Array.from(new Set((data ?? []).map((r) => String(r.symbol).toUpperCase())));
     setSymbols(uniq);
+    activeRef.current = uniq.filter((s) => !mutedSet.has(s));
     await load();
   });
 
   useEffect(() => {
-    if (symbols.length === 0) return;
+    if (activeSymbols.length === 0) return;
     load();
     const iv = setInterval(load, POLL_MS);
     const tick = setInterval(() => forceTick((x) => x + 1), 60_000);
@@ -112,7 +124,27 @@ export function NewsPanel({
       clearInterval(tick);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [symbols.join(",")]);
+  }, [activeSymbols.join(",")]);
+
+  async function confirmMute() {
+    const sym = pendingMute;
+    setPendingMute(null);
+    if (!sym) return;
+    try {
+      await mute(sym);
+      toast.success(`חדשות של ${sym} הוסתרו`, {
+        action: {
+          label: "בטל",
+          onClick: () => {
+            void unmute(sym).catch(() => toast.error("ההחזרה נכשלה"));
+          },
+        },
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "ההסתרה נכשלה");
+    }
+  }
+
 
   useEffect(() => {
     return () => {
