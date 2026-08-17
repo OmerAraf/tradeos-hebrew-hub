@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { useRefreshHandler } from "@/lib/refresh";
 import { useTrades } from "@/lib/use-trades";
 import { isOpen } from "@/lib/trade-types";
+import { useMutedSymbols } from "@/lib/news-mute";
+
 
 /** Chips row: "הכל" + union of watchlist symbols and open-position symbols. */
 export function NewsSymbolChips({
