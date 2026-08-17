@@ -26,6 +26,12 @@ import {
 } from "@/components/ui/alert-dialog";
 
 
+const NO_SELECT: React.CSSProperties = {
+  WebkitUserSelect: "none",
+  userSelect: "none",
+  WebkitTouchCallout: "none",
+} as const;
+
 /** Chips row: "הכל" + union of watchlist symbols and open-position symbols. */
 export function NewsSymbolChips({
   selected,
@@ -97,37 +103,44 @@ export function NewsSymbolChips({
   return (
     <div className="mb-4 flex flex-col gap-2">
       <div className="flex flex-col gap-2 md:flex-row md:items-center">
-        <div className="-mx-1 flex-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="flex w-max flex-nowrap items-center gap-2">
-            <Chip active={selected === null} onClick={() => onSelect(null)}>
-              הכל
-            </Chip>
-            {symbols.map((s) => (
-              <Chip
-                key={s}
-                active={selected === s}
-                onClick={() => onSelect(s)}
-                editing={editing}
-                onRemove={() => setPendingRemove(s)}
-              >
-                <span dir="ltr">{s}</span>
+        <div className="flex items-center gap-2">
+          {symbols.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setEditing((v) => !v)}
+              onContextMenu={(e) => e.preventDefault()}
+              aria-pressed={editing}
+              aria-label={editing ? "סיום עריכה" : "עריכת סימבולים"}
+              style={NO_SELECT}
+              className={`flex min-h-11 shrink-0 select-none touch-manipulation items-center gap-1.5 rounded-xl border-2 px-3 text-sm font-bold transition-all duration-300 [-webkit-touch-callout:none] [-webkit-user-select:none] ${
+                editing
+                  ? "neon-border bg-primary/20 text-neon"
+                  : "glass border-white/15 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {editing ? <Check className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
+              <span style={NO_SELECT}>{editing ? "סיום" : "עריכה"}</span>
+            </button>
+          )}
+          <div className="-mx-1 flex-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex w-max flex-nowrap items-center gap-2">
+              <Chip active={selected === null} onClick={() => onSelect(null)}>
+                <span style={NO_SELECT}>הכל</span>
               </Chip>
-            ))}
-            {symbols.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setEditing((v) => !v)}
-                aria-pressed={editing}
-                aria-label={editing ? "סיום עריכה" : "עריכת סימבולים"}
-                className={`flex min-h-11 min-w-11 select-none touch-manipulation items-center justify-center rounded-xl text-sm font-semibold transition-all duration-300 [-webkit-touch-callout:none] [-webkit-user-select:none] ${
-                  editing
-                    ? "neon-border bg-primary/20 text-neon"
-                    : "glass border border-white/10 text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {editing ? <Check className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
-              </button>
-            )}
+              {symbols.map((s) => (
+                <Chip
+                  key={s}
+                  active={selected === s}
+                  onClick={() => onSelect(s)}
+                  editing={editing}
+                  onRemove={() => setPendingRemove(s)}
+                >
+                  <span dir="ltr" style={NO_SELECT}>
+                    {s}
+                  </span>
+                </Chip>
+              ))}
+            </div>
           </div>
         </div>
         <form onSubmit={submitQuery} className="flex shrink-0 items-center gap-2">
@@ -193,7 +206,9 @@ function Chip({
     <button
       type="button"
       onClick={onClick}
+      onContextMenu={(e) => e.preventDefault()}
       aria-pressed={active}
+      style={NO_SELECT}
       className={`flex min-h-11 select-none touch-manipulation items-center gap-1.5 whitespace-nowrap rounded-xl px-3 text-sm font-semibold transition-all duration-300 [-webkit-touch-callout:none] [-webkit-user-select:none] ${
         editing ? "border border-dashed border-white/20 bg-white/5" : ""
       } ${
