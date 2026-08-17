@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
-import { RefreshCw, ExternalLink, ArrowLeft, EyeOff } from "lucide-react";
-import { toast } from "sonner";
+import { RefreshCw, ExternalLink, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchTranslatedNewsForSymbols, type TranslatedNewsItem } from "@/lib/news.functions";
 import { relativeTimeHe } from "@/lib/relative-time-he";
@@ -10,16 +9,7 @@ import { GlassCard } from "@/components/ui-blocks";
 import { Button } from "@/components/ui/button";
 import { useRefreshHandler } from "@/lib/refresh";
 import { useMutedSymbols } from "@/lib/news-mute";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+
 
 
 const LAST_SEEN_KEY = "tradeos_news_lastseen";
@@ -52,8 +42,8 @@ export function NewsPanel({
   const [err, setErr] = useState<string | null>(null);
   const lastSeenRef = useRef<number>(readLastSeen());
   const [, forceTick] = useState(0);
-  const { muted, mute, unmute } = useMutedSymbols();
-  const [pendingMute, setPendingMute] = useState<string | null>(null);
+  const { muted } = useMutedSymbols();
+
 
   const mutedSet = useMemo(() => new Set(muted), [muted]);
   const activeSymbols = useMemo(
@@ -126,24 +116,8 @@ export function NewsPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSymbols.join(",")]);
 
-  async function confirmMute() {
-    const sym = pendingMute;
-    setPendingMute(null);
-    if (!sym) return;
-    try {
-      await mute(sym);
-      toast.success(`חדשות של ${sym} הוסתרו`, {
-        action: {
-          label: "בטל",
-          onClick: () => {
-            void unmute(sym).catch(() => toast.error("ההחזרה נכשלה"));
-          },
-        },
-      });
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "ההסתרה נכשלה");
-    }
-  }
+
+
 
 
   useEffect(() => {
@@ -221,58 +195,40 @@ export function NewsPanel({
             const isNew = !isSummary && +new Date(it.publishedAt) > lastSeenRef.current;
             return (
               <li key={it.link} className={isSummary ? "py-2" : "py-3"}>
-                <div className="flex items-start gap-1">
-                  <a
-                    href={it.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group flex flex-1 items-start gap-2 rounded-lg p-1.5 transition hover:bg-white/5"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span
-                          className="rounded bg-neon/15 px-1.5 py-0.5 text-[10px] font-semibold text-neon"
-                          dir="ltr"
-                        >
-                          {it.symbol}
+                <a
+                  href={it.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-start gap-2 rounded-lg p-1.5 transition hover:bg-white/5"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span
+                        className="rounded bg-neon/15 px-1.5 py-0.5 text-[10px] font-semibold text-neon"
+                        dir="ltr"
+                      >
+                        {it.symbol}
+                      </span>
+                      {isNew && (
+                        <span className="rounded bg-profit/20 px-1.5 py-0.5 text-[10px] font-semibold text-profit">
+                          חדש
                         </span>
-                        {isNew && (
-                          <span className="rounded bg-profit/20 px-1.5 py-0.5 text-[10px] font-semibold text-profit">
-                            חדש
-                          </span>
-                        )}
-                        <span className="text-[11px] text-muted-foreground">
-                          {relativeTimeHe(it.publishedAt)} · {it.source}
-                        </span>
-                      </div>
-                      <div className={`mt-1 ${isSummary ? "text-sm" : "text-base"} text-foreground group-hover:text-neon`}>
-                        {it.titleHe}
-                      </div>
-                      {!isSummary && (
-                        <div className="mt-0.5 text-xs text-muted-foreground/70" dir="ltr">
-                          {it.titleEn}
-                        </div>
                       )}
+                      <span className="text-[11px] text-muted-foreground">
+                        {relativeTimeHe(it.publishedAt)} · {it.source}
+                      </span>
                     </div>
-                    <ExternalLink className="mt-1 h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-60 transition group-hover:opacity-100" />
-                  </a>
-                  {!isSummary && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="min-h-11 min-w-11 shrink-0 text-muted-foreground hover:text-loss"
-                      aria-label={`הסתר חדשות עבור ${it.symbol}`}
-                      title={`הסתר חדשות עבור ${it.symbol}`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setPendingMute(it.symbol.toUpperCase());
-                      }}
-                    >
-                      <EyeOff className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
+                    <div className={`mt-1 ${isSummary ? "text-sm" : "text-base"} text-foreground group-hover:text-neon`}>
+                      {it.titleHe}
+                    </div>
+                    {!isSummary && (
+                      <div className="mt-0.5 text-xs text-muted-foreground/70" dir="ltr">
+                        {it.titleEn}
+                      </div>
+                    )}
+                  </div>
+                  <ExternalLink className="mt-1 h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-60 transition group-hover:opacity-100" />
+                </a>
               </li>
             );
           })}
@@ -292,22 +248,6 @@ export function NewsPanel({
         </div>
       )}
 
-      <AlertDialog open={!!pendingMute} onOpenChange={(o) => !o && setPendingMute(null)}>
-        <AlertDialogContent dir="rtl">
-          <AlertDialogHeader>
-            <AlertDialogTitle>{`להסתיר חדשות עבור ${pendingMute ?? ""}?`}</AlertDialogTitle>
-            <AlertDialogDescription>
-              לא תראה יותר כותרות של הסימבול הזה בפיד. אפשר להחזיר בכל רגע.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="min-h-11">ביטול</AlertDialogCancel>
-            <AlertDialogAction className="min-h-11" onClick={confirmMute}>
-              הסתר
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </GlassCard>
   );
 }

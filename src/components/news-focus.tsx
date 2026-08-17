@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { ExternalLink, RefreshCw, ArrowRight, Search } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
   fetchTranslatedNewsForSymbol,
@@ -13,6 +14,16 @@ import { useRefreshHandler } from "@/lib/refresh";
 import { useTrades } from "@/lib/use-trades";
 import { isOpen } from "@/lib/trade-types";
 import { useMutedSymbols } from "@/lib/news-mute";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 
 /** Chips row: "הכל" + union of watchlist symbols and open-position symbols. */
@@ -26,6 +37,7 @@ export function NewsSymbolChips({
   const trades = useTrades();
   const [watchSymbols, setWatchSymbols] = useState<string[]>([]);
   const [query, setQuery] = useState("");
+  const [pendingRemove, setPendingRemove] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -39,7 +51,7 @@ export function NewsSymbolChips({
     };
   }, []);
 
-  const { muted } = useMutedSymbols();
+  const { muted, mute, unmute } = useMutedSymbols();
 
   const symbols = useMemo(() => {
     const set = new Set<string>(watchSymbols);
@@ -57,52 +69,148 @@ export function NewsSymbolChips({
     setQuery("");
   }
 
+  async function confirmRemove() {
+    const sym = pendingRemove;
+    setPendingRemove(null);
+    if (!sym) return;
+    try {
+      await mute(sym);
+      if (selected === sym) onSelect(null);
+      toast.success(`${sym} הוסר מהחדשות`, {
+        action: {
+          label: "בטל",
+          onClick: () => {
+            void unmute(sym).catch(() => toast.error("ההחזרה נכשלה"));
+          },
+        },
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "ההסרה נכשלה");
+    }
+  }
+
   return (
-    <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center">
-      <div className="-mx-1 flex-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <div className="flex w-max flex-nowrap items-center gap-2">
-          <Chip active={selected === null} onClick={() => onSelect(null)}>
-            הכל
-          </Chip>
-          {symbols.map((s) => (
-            <Chip key={s} active={selected === s} onClick={() => onSelect(s)}>
-              <span dir="ltr">{s}</span>
+    <div className="mb-4 flex flex-col gap-2">
+      <div className="flex flex-col gap-2 md:flex-row md:items-center">
+        <div className="-mx-1 flex-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex w-max flex-nowrap items-center gap-2">
+            <Chip active={selected === null} onClick={() => onSelect(null)}>
+              הכל
             </Chip>
-          ))}
+            {symbols.map((s) => (
+              <Chip
+                key={s}
+                active={selected === s}
+                onClick={() => onSelect(s)}
+                onLongPress={() => setPendingRemove(s)}
+              >
+                <span dir="ltr">{s}</span>
+              </Chip>
+            ))}
+          </div>
         </div>
+        <form onSubmit={submitQuery} className="flex shrink-0 items-center gap-2">
+          <div className="relative">
+            <Search className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value.toUpperCase())}
+              placeholder="סימבול אחר…"
+              maxLength={10}
+              aria-label="חיפוש סימבול"
+              className="glass min-h-11 w-40 rounded-xl border border-white/10 bg-transparent py-2 pr-8 pl-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-neon focus:outline-none"
+            />
+          </div>
+        </form>
       </div>
-      <form onSubmit={submitQuery} className="flex shrink-0 items-center gap-2">
-        <div className="relative">
-          <Search className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value.toUpperCase())}
-            placeholder="סימבול אחר…"
-            maxLength={10}
-            aria-label="חיפוש סימבול"
-            className="glass min-h-11 w-40 rounded-xl border border-white/10 bg-transparent py-2 pr-8 pl-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-neon focus:outline-none"
-          />
-        </div>
-      </form>
+
+      {symbols.length > 0 && muted.length === 0 && (
+        <p className="text-xs text-muted-foreground">
+          לחיצה ארוכה על סימבול מסירה אותו מהחדשות
+        </p>
+      )}
+
+      <AlertDialog open={!!pendingRemove} onOpenChange={(o) => !o && setPendingRemove(null)}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{`להסיר את ${pendingRemove ?? ""} מהחדשות?`}</AlertDialogTitle>
+            <AlertDialogDescription>
+              לא תקבל יותר עדכוני חדשות על הסימבול הזה. אפשר להחזיר בכל רגע מהרשימה בתחתית המסך.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="min-h-11">ביטול</AlertDialogCancel>
+            <AlertDialogAction className="min-h-11" onClick={confirmRemove}>
+              הסר
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
 
+const LONG_PRESS_MS = 550;
+
 function Chip({
   active,
   onClick,
+  onLongPress,
   children,
 }: {
   active: boolean;
   onClick: () => void;
+  onLongPress?: () => void;
   children: React.ReactNode;
 }) {
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fired = useRef(false);
+  const [pressing, setPressing] = useState(false);
+
+  function clear() {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+    setPressing(false);
+  }
+
+  function trigger() {
+    fired.current = true;
+    setPressing(false);
+    navigator.vibrate?.(40);
+    onLongPress?.();
+  }
+
+  useEffect(() => clear, []);
+
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={() => {
+        if (fired.current) {
+          fired.current = false;
+          return;
+        }
+        onClick();
+      }}
+      onPointerDown={() => {
+        if (!onLongPress) return;
+        fired.current = false;
+        setPressing(true);
+        timer.current = setTimeout(trigger, LONG_PRESS_MS);
+      }}
+      onPointerUp={clear}
+      onPointerLeave={clear}
+      onPointerCancel={clear}
+      onContextMenu={(e) => {
+        if (!onLongPress) return;
+        e.preventDefault();
+        clear();
+        trigger();
+      }}
       aria-pressed={active}
       className={`flex min-h-11 items-center whitespace-nowrap rounded-xl px-4 text-sm font-semibold transition active:scale-95 ${
+        pressing ? "scale-95 opacity-70" : ""
+      } ${
         active
           ? "neon-border bg-primary/20 text-neon"
           : "glass border border-white/10 text-muted-foreground hover:text-foreground"
@@ -112,6 +220,7 @@ function Chip({
     </button>
   );
 }
+
 
 /** Focus mode: all available news for one symbol. */
 export function NewsFocusPanel({
