@@ -116,24 +116,8 @@ export function NewsPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSymbols.join(",")]);
 
-  async function confirmMute() {
-    const sym = pendingMute;
-    setPendingMute(null);
-    if (!sym) return;
-    try {
-      await mute(sym);
-      toast.success(`חדשות של ${sym} הוסתרו`, {
-        action: {
-          label: "בטל",
-          onClick: () => {
-            void unmute(sym).catch(() => toast.error("ההחזרה נכשלה"));
-          },
-        },
-      });
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "ההסתרה נכשלה");
-    }
-  }
+
+
 
 
   useEffect(() => {
