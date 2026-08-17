@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
-import { RefreshCw, ExternalLink, ArrowLeft, EyeOff } from "lucide-react";
-import { toast } from "sonner";
+import { RefreshCw, ExternalLink, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchTranslatedNewsForSymbols, type TranslatedNewsItem } from "@/lib/news.functions";
 import { relativeTimeHe } from "@/lib/relative-time-he";
@@ -10,16 +9,7 @@ import { GlassCard } from "@/components/ui-blocks";
 import { Button } from "@/components/ui/button";
 import { useRefreshHandler } from "@/lib/refresh";
 import { useMutedSymbols } from "@/lib/news-mute";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+
 
 
 const LAST_SEEN_KEY = "tradeos_news_lastseen";
