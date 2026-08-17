@@ -37,11 +37,15 @@ export function NewsSymbolChips({
     };
   }, []);
 
+  const { muted } = useMutedSymbols();
+
   const symbols = useMemo(() => {
     const set = new Set<string>(watchSymbols);
     for (const t of trades) if (isOpen(t)) set.add(t.symbol.toUpperCase());
+    for (const m of muted) set.delete(m.toUpperCase());
     return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [watchSymbols, trades]);
+  }, [watchSymbols, trades, muted]);
+
 
   function submitQuery(e: React.FormEvent) {
     e.preventDefault();
